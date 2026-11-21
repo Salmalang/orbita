@@ -1,7 +1,7 @@
 # MVP scope
 
 ## The scenario
-A safety manager of a metal-working production hall watches AEROGUARD TRUST in the control room. Recorded, real sensor data from the Industrial Hall dataset is **replayed** (clearly labelled as historical replay) and analysed by the trained model in real time.
+A safety manager of a metal-working production hall watches ARGOS in the control room. Recorded, real sensor data from the Industrial Hall dataset is **replayed** (clearly labelled as historical replay) and analysed by the trained model in real time.
 
 | Item | Definition |
 |---|---|
@@ -33,5 +33,5 @@ A safety manager of a metal-working production hall watches AEROGUARD TRUST in t
 | Real authentication, multi-site, hardware sensors, real drone | Planned |
 
 ## Safety boundaries
-- Certified fire alarms and emergency shutdown systems remain independent. AEROGUARD never authorises a dangerous operation and never replaces them.
+- Certified fire alarms and emergency shutdown systems remain independent. ARGOS never authorises a dangerous operation and never replaces them.
 - Human roles (technician, verifier) are **demo roles** chosen in the UI.

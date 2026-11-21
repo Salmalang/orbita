@@ -7,7 +7,7 @@ A follow-up mission (FOLLOW_UP) re-inspects a checkpoint to confirm a corrective
 
 Movement is simulated in wall-clock time along the route. Findings are recorded by the operator and
 are always labelled "illustrative": there is no computer-vision or thermal model behind them.
-The scheduler is simulated too: it only runs while the AEROGUARD server process is running.
+The scheduler is simulated too: it only runs while the ARGOS server process is running.
 """
 from __future__ import annotations
 

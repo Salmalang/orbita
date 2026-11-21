@@ -1,4 +1,4 @@
-# AEROGUARD TRUST — contributor guide
+# ARGOS — contributor guide
 
 Hackathon: **AeroEntrepreneur / Tunisian Aeroday**, in partnership with the Protection Civile and INJAZ Tunisia.
 **Hard deadline: Sunday 22 November, 09:00** (deliverables uploaded to the team Google Drive). The spec is `docs/cahier_des_charges.pdf`; every requirement is tracked in `docs/REQUIREMENTS.md`. Check that file before and after each work session.
@@ -15,7 +15,7 @@ An industrial fire-safety platform for factories and high-risk sites that applie
 8. **Digital Black Box**: incident timeline replay.
 9. **Hedera Consensus Service**: only SHA-256 fingerprints are anchored (no confidential data). Detailed data stays private.
 
-Certified fire alarms always remain independent of AEROGUARD. Never write code or copy that implies otherwise.
+Certified fire alarms always remain independent of ARGOS. Never write code or copy that implies otherwise.
 
 ## Mandatory constraints from the spec
 Realism and consistency with aeronautical standards · real-time interactivity (the user makes decisions live) · **real data only, never generated** (see docs/DATASETS.md; Protection Civile data when received) · **physical simulation** = physics models fitted on real measurements (`physics/`) · safety of people and the environment first.

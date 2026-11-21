@@ -1,4 +1,4 @@
-"""AEROGUARD TRUST backend API + control-room UI.
+"""ARGOS backend API + control-room UI.
 
 Run:  .venv/Scripts/python -m uvicorn backend.app.main:app --port 8000
 Open: http://localhost:8000
@@ -26,7 +26,7 @@ FACILITY = json.loads((Path(__file__).parent / "data" / "facility.json").read_te
 ZONE = FACILITY["id"]
 REFERENCE_IMG = ROOT / "data" / "raw" / "motor_thermal" / "extracted" / "IR-Motor-bmp" / "A&C&B30"
 
-app = FastAPI(title="AEROGUARD TRUST", version="0.3.0",
+app = FastAPI(title="ARGOS", version="0.3.0",
               description="Industrial fire-safety prototype. Historical replay of real recordings; demo roles.")
 
 
@@ -331,7 +331,7 @@ def drone_overview():
             "schedules": d.schedules(), "active": d.active_mission(), "missions": d.missions()[:30],
             "findings": d.findings()[:50], "finding_types": FINDING_TYPES, "severities": SEVERITIES,
             "simulated": True, "note": FACILITY["drone_note"],
-            "scheduler_note": "Simulated scheduler: patrols launch only while the AEROGUARD server is running."}
+            "scheduler_note": "Simulated scheduler: patrols launch only while the ARGOS server is running."}
 
 
 def _mission_call(fn, *a, **k):

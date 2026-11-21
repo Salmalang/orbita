@@ -1,6 +1,6 @@
-# AEROGUARD TRUST
+# ARGOS — One Step Ahead
 
-**Earlier fire warning for metal-working production halls, with a verified response workflow.**
+**Earlier fire warning for metal-working production halls, with a verified response workflow.** (Project formerly named AEROGUARD TRUST; the scientific report and audit keep the former name.)
 
 Built for **AeroEntrepreneur 2026** (Tunisian Aeroday × Protection Civile × INJAZ Tunisia).
 
@@ -14,7 +14,7 @@ Built for **AeroEntrepreneur 2026** (Tunisian Aeroday × Protection Civile × IN
 4. **Digital Safety Case** opens on CRITICAL and closes only with three confirmations: the technician's action, an **independent** verifier, and **15 minutes of measured readings back to normal**.
 5. **Safety Passport**, **Black Box** timeline (hash-chained event log) and **Emergency Fire Pack** for the Protection Civile.
 
-Certified fire alarms and emergency shutdown systems always remain independent of AEROGUARD.
+Certified fire alarms and emergency shutdown systems always remain independent of ARGOS.
 
 ## Evidence (real data, held-out)
 
@@ -43,7 +43,7 @@ Open **http://localhost:8000**. The backend serves the interface; there is no se
 
 ## Guided demo (recommended for the jury)
 
-Click **▶ Start Guided Demo** (top right). Each step explains what you see; its button performs the real action in the application.
+Click **▶ Guided tour** (top right). Each step explains what you see; its button performs the real action in the application.
 
 **Scenario 1 · Preventive drone inspection (simulated drone, illustrative finding)**
 Patrol schedule → start the full patrol → watch the drone visit the checkpoints → record an illustrative finding (blocked east exit) → open a Safety Case → technician action → independent verification → follow-up drone inspection marks the exit clear → case closes (simulated inspection evidence, labelled).
@@ -61,10 +61,10 @@ One-minute video plan: [docs/DEMO_VIDEO_SCRIPT.md](docs/DEMO_VIDEO_SCRIPT.md).
 |---|---|
 | Overview | Is my facility safe? What needs attention? What should I do next? Next patrol, drone status, findings |
 | Live Monitoring | Replay of real recordings, AI fire/nuisance likelihood per sensor, risk level with reasons |
-| Drone Operations | Preventive patrols (scheduled or manual), routes and checkpoints, live position, findings, approvals, history |
-| Safety Cases | Investigations from sensor alerts or patrol findings; action, independent verification, closure rules |
-| Equipment Passport | Zone history, cases, inspections, integrity chain, model provenance |
-| Black Box | Every event in order, labelled by source (recorded data, model, risk engine, human demo role, simulated) |
+| Drone Inspections | Routine patrols (scheduled or manual), routes and checkpoints, live position, findings, approvals, history |
+| Incident Follow-up (Safety Cases) | Investigations from sensor alerts or patrol findings; action, independent verification, closure rules |
+| Equipment History | Zone history, cases, inspections, integrity chain, model provenance |
+| Event Timeline (black box) | Every event in order, labelled by source (recorded data, model, risk engine, human demo role, simulated) |
 | Emergency Fire Pack | Printable emergency sheet for responders |
 | AI Evidence | What the real data supports and what it does not |
 
