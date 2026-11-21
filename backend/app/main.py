@@ -20,6 +20,8 @@ from backend.app.cases import CaseManager, WorkflowError
 from backend.app.replay import SPEEDS, HallData, ReplayEngine
 from backend.app.store import DEFAULT_DB, Store
 from drone.missions import FINDING_TYPES, SEVERITIES, MissionError, MissionManager
+from hedera.anchor import AnchorService, HederaError
+from learning.pipeline import OUTCOMES, LearningPipeline
 
 ROOT = Path(__file__).resolve().parents[2]
 FACILITY = json.loads((Path(__file__).parent / "data" / "facility.json").read_text(encoding="utf-8"))
@@ -38,6 +40,8 @@ class Runtime:
         self.cases = CaseManager(self.store)
         self.simulate_drone = simulate_drone
         self.drone = MissionManager(self.store, FACILITY, autostart=simulate_drone)
+        self.anchors = AnchorService(self.store)
+        self.learning = LearningPipeline(self.store, self.anchors)
         self.data = HallData()
         self.engine = ReplayEngine(self.data, on_tick=self.on_tick)
         self._last_level = "NORMAL"
@@ -157,6 +161,12 @@ class NewScheduleReq(BaseModel):
     route_id: str
     every_minutes: int = Field(ge=1, le=1440)
     start_in_minutes: int = Field(0, ge=0, le=1440)
+
+
+class OutcomeReq(BaseModel):
+    person: str = Field(min_length=2, max_length=60)
+    outcome: str
+    note: str = Field("", max_length=500)
 
 
 class FindingCaseReq(BaseModel):
@@ -420,6 +430,89 @@ def case_close_check(case_id: str):
     except KeyError:
         _err(KeyError(case_id), 404)
     except WorkflowError as e:
+        _err(e)
+
+
+# ------------------------------------------------------------------------------ Hedera evidence + learning
+def _hedera_call(fn, *a, **k):
+    try:
+        return fn(*a, **k)
+    except KeyError as e:
+        _err(KeyError(f"not found: {e}"), 404)
+    except HederaError as e:
+        _err(e, 503 if "unreachable" in str(e) or "failed" in str(e) else 409)
+
+
+@app.get("/api/hedera")
+def hedera_status():
+    r = rt()
+    return {**r.anchors.status(), "anchors": r.anchors.anchors()[:20]}
+
+
+@app.post("/api/hedera/anchor")
+def hedera_anchor():
+    return _hedera_call(rt().anchors.anchor, "event-chain")
+
+
+@app.post("/api/hedera/anchors/{anchor_id}/verify")
+def hedera_verify(anchor_id: str):
+    return _hedera_call(rt().anchors.verify, anchor_id)
+
+
+@app.post("/api/cases/{case_id}/outcome")
+def case_outcome(case_id: str, req: OutcomeReq):
+    try:
+        return rt().cases.confirm_outcome(case_id, req.person, req.outcome, req.note)
+    except KeyError:
+        _err(KeyError(case_id), 404)
+    except WorkflowError as e:
+        _err(e)
+
+
+@app.get("/api/learning")
+def learning_status():
+    r = rt()
+    rows = r.learning.assess()
+    return {"current_model": r.learning.current_model(), "outcomes": OUTCOMES, "incidents": rows,
+            "counts": {s: sum(x["state"] == s for x in rows) for s in ("ELIGIBLE", "AWAITING_OUTCOME", "EXCLUDED")},
+            "datasets": r.learning.datasets()[:10],
+            "promotion": "Not available: a candidate must pass validation on the original held-out benchmark and be approved; no automatic deployment."}
+
+
+@app.post("/api/learning/dataset")
+def learning_prepare():
+    return rt().learning.prepare_dataset()
+
+
+@app.post("/api/learning/dataset/{version}/verify")
+def learning_verify(version: str):
+    try:
+        return rt().learning.verify_dataset(version)
+    except KeyError:
+        _err(KeyError(version), 404)
+
+
+@app.post("/api/learning/dataset/{version}/anchor")
+def learning_anchor(version: str):
+    r = rt()
+    try:
+        d = r.learning.verify_dataset(version)
+    except KeyError:
+        _err(KeyError(version), 404)
+    if not d["manifest_hash_ok"]:
+        _err(ValueError("dataset manifest changed after preparation"))
+    m = r.learning.current_model()
+    return _hedera_call(r.anchors.anchor, "dataset-manifest",
+                        {"dataset_version": version, "dataset_sha256": d["sha256"], "base_model_sha256": m.get("model_sha256")})
+
+
+@app.post("/api/learning/dataset/{version}/train")
+def learning_train(version: str):
+    try:
+        return rt().learning.train_candidate(version)
+    except KeyError:
+        _err(KeyError(version), 404)
+    except ValueError as e:
         _err(e)
 
 

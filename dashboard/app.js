@@ -33,7 +33,9 @@ const eventTitle = (e) => ({
   replay_loaded: `Recording loaded: ${e.payload.event_id}`, demo_reset: "Demo reset", mission_created: "Drone inspection created",
   mission_approve: "Drone flight approved", mission_completed: "Drone inspection finished", checkpoint_inspected: `Drone checked: ${e.payload.label}`,
   inspection_finding: `Drone finding (illustrative): ${e.payload.type}`, checkpoint_clear: `Marked clear: ${e.payload.checkpoint}`,
-  replay_auto_paused: "Replay paused for the response", patrol_schedule_set: "Patrol schedule updated", mission_cancel: "Drone inspection cancelled",
+  replay_auto_paused: "Replay paused for the response", outcome_confirmed: "Real outcome confirmed by a second person",
+  hedera_anchor_submitted: "Evidence fingerprint sent to Hedera", hedera_verification: `Hedera check: ${e.payload.status}`,
+  learning_dataset_prepared: `Learning dataset ${e.payload.dataset_version} prepared`, patrol_schedule_set: "Patrol schedule updated", mission_cancel: "Drone inspection cancelled",
   mission_pause: "Drone inspection paused", mission_resume: "Drone inspection resumed", case_escalated: "Fire signal still present after the intervention",
 }[e.kind] || e.kind);
 const LEVEL_COLOR = { NORMAL: "#2E7D4F", WATCH: "#2F5F98", HIGH: "#9A5B00", CRITICAL: "#B3261E", NO_DATA: "#9A9088" };
@@ -455,6 +457,7 @@ function CaseDetail({ id, ctx }) {
           ${c.status === "CLOSED" && html`<div class="banner info" style="margin-top:10px">✓ Closed with 3 confirmations: technician, independent verifier, and ${isFinding ? "a follow-up inspection (simulated evidence)" : "live measured readings"}.</div>`}
           ${!isFinding && c.stabilization && !c.stabilization.passed && c.stabilization.non_live_ticks_after_action > 0 && html`<div class="banner info" style="margin-top:10px">ⓘ Why the case stays open: in this dataset the recording repeats its last values for 20–45 min after each experiment (likely the ventilation phase), and the next experiment starts soon after. Repeated values are not measurements, so ARGOS refuses to close the case on data it cannot trust.</div>`}
         </div>
+        <${OutcomeCard} c=${c} ctx=${ctx} post=${post}/>
         <div class="card"><h2>Activity</h2><${Timeline} events=${trail} compact/></div>
       </div>
     </div>
@@ -608,6 +611,95 @@ function BlackBox({ ctx }) {
     </div></div>`;
 }
 
+const HSTAT = { VERIFIED: ["ok", "✓ Verified on Hedera"], AWAITING_CONFIRMATION: ["HIGH", "… Awaiting confirmation"], SUBMITTED: ["HIGH", "… Submitted, not yet verified"],
+  MISMATCH: ["bad", "⚠ Evidence mismatch"], UNAVAILABLE: ["pending", "? Hedera unavailable"], NOT_ANCHORED: ["pending", "○ Not anchored"], FAILED: ["bad", "⚠ Submission failed"], PENDING: ["pending", "○ Not anchored"] };
+
+function HederaCard({ toast }) {
+  const [h, setH] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const load = async () => setH(await api("/api/hedera"));
+  usePoll(load, 5000, []);
+  if (!h) return null;
+  const run = async (fn) => { setBusy(true); try { await fn(); await load(); } catch (e) { toast(e.message, true); } setBusy(false); };
+  const a = h.latest; const st = a ? (a.verification?.status || a.status) : "NOT_ANCHORED";
+  return html`<div class="card"><h2>Hedera evidence <span class="r"><span class="pill rec">Hedera testnet</span></span></h2>
+    <div class="muted" style="margin-bottom:12px">ARGOS stores a digital fingerprint of the incident history on Hedera, so any later change can be detected. Only the fingerprint is sent, never sensor data or names.</div>
+    <div class="grid g2">
+      <dl class="kv">
+        <dt>Local evidence</dt><dd><span class=${`pill ${h.local_chain.ok ? "ok" : "bad"}`}>${h.local_chain.ok ? "✓ intact" : "⚠ broken"}</span> <span class="muted">${h.local_chain.events} events</span></dd>
+        <dt>Hedera status</dt><dd><span class=${`pill ${HSTAT[st][0]}`}>${HSTAT[st][1]}</span></dd>
+        <dt>Topic ID</dt><dd class="mono">${h.topic_id || "—"}</dd>
+        <dt>Transaction ID</dt><dd class="mono">${a?.transaction_id || "—"}</dd>
+        <dt>Consensus time</dt><dd class="mono">${a?.consensus_timestamp || "—"}</dd>
+        <dt>Fingerprint</dt><dd class="hash">${a?.snapshot?.head_sha256 || "—"}</dd>
+      </dl>
+      <div class="stack">
+        ${!h.configured && html`<div class="banner err">Not connected: ${h.config_message}. No transaction is shown until a real one exists.</div>`}
+        <button class="btn primary" disabled=${busy || !h.configured} onClick=${() => run(() => api("/api/hedera/anchor", {}))}>Anchor evidence to Hedera</button>
+        <button class="btn" disabled=${busy || !a?.sequence_number} onClick=${() => run(() => api(`/api/hedera/anchors/${a.id}/verify`, {}))}>Verify on Hedera</button>
+        ${h.explorer && html`<a class="btn ghost" href=${h.explorer} target="_blank" rel="noopener">Open topic on HashScan ↗</a>`}
+        ${a?.verification && html`<div class="muted" style="font-size:13px">${a.verification.detail} <span class="dim">(${a.verification.checked_at})</span></div>`}
+        <div class="muted" style="font-size:12px">Hedera proves the fingerprint existed at a given time. It does not prove that sensor readings or labels are physically true.</div>
+      </div>
+    </div>
+    ${h.anchors.length > 1 && html`<details style="margin-top:10px"><summary>All anchors (${h.anchors.length})</summary><table class="t"><tbody>${h.anchors.map(x => html`<tr>
+      <td class="mono">${x.id}</td><td>${x.snapshot.evidence_type}</td><td class="mono">${x.transaction_id || "—"}</td><td><span class=${`pill ${HSTAT[x.verification?.status || x.status][0]}`}>${HSTAT[x.verification?.status || x.status][1]}</span></td></tr>`)}</tbody></table></details>`}
+  </div>`;
+}
+
+function LearningCard({ toast }) {
+  const [l, setL] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const load = async () => setL(await api("/api/learning"));
+  usePoll(load, 6000, []);
+  if (!l) return null;
+  const run = async (fn) => { setBusy(true); setMsg(null); try { const r = await fn(); await load(); return r; } catch (e) { setMsg(e.message); } finally { setBusy(false); } };
+  const m = l.current_model, d = l.datasets[0];
+  return html`<div class="card"><h2>AI learning <span class="r"><span class="pill pending">advanced users</span></span></h2>
+    <div class="muted" style="margin-bottom:12px">ARGOS can learn only from incidents whose real outcome was confirmed by a second person, whose evidence is intact and verified on Hedera, and that are genuinely new. It never replaces the approved model automatically.</div>
+    <div class="grid g3">
+      <div><div class="muted" style="font-size:12px">CURRENT MODEL</div><b>${m.available ? `${m.name} ${m.version}` : "not available"}</b>
+        <div class="muted" style="font-size:13px">${m.status} · fires ${m.summary?.fires_detected}, nuisance alarms ${m.summary?.nuisance_alarms} (held-out)</div>
+        <div class="hash">model ${m.model_sha256?.slice(0, 16)}… · data ${m.training_data_sha256?.slice(0, 16)}…</div></div>
+      <div><div class="muted" style="font-size:12px">LEARNING DATA</div>
+        <div><span class="pill ok">${l.counts.ELIGIBLE} eligible</span> <span class="pill HIGH">${l.counts.AWAITING_OUTCOME} awaiting outcome</span> <span class="pill pending">${l.counts.EXCLUDED} excluded</span></div></div>
+      <div><div class="muted" style="font-size:12px">LATEST DATASET</div>${d ? html`<b>${d.id}</b> · ${d.new_examples} new example(s)<div class="hash">${d.sha256}</div>` : html`<span class="muted">none prepared</span>`}</div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" disabled=${busy} onClick=${() => run(() => api("/api/learning/dataset", {}))}>Prepare learning dataset</button>
+      <button class="btn" disabled=${busy || !d} onClick=${async () => { const r = await run(() => api(`/api/learning/dataset/${d.id}/verify`, {})); if (r) setMsg(r.manifest_hash_ok ? `✓ Dataset ${d.id} unchanged since it was prepared.${r.anchored.length ? ` Anchored: ${r.anchored.join(", ")}.` : " Not yet anchored on Hedera."}` : "⚠ Dataset manifest was modified."); }}>Verify training evidence</button>
+      <button class="btn" disabled=${busy || !d} onClick=${() => run(() => api(`/api/learning/dataset/${d.id}/anchor`, {}))}>Anchor dataset fingerprint</button>
+      <button class="btn primary" disabled=${busy || !d} onClick=${() => run(() => api(`/api/learning/dataset/${d.id}/train`, {}))}>Train candidate model</button>
+    </div>
+    ${msg && html`<div class="banner info" style="margin-top:10px">${msg}</div>`}
+    <div class="muted" style="font-size:12.5px;margin-top:8px">Model promotion: ${l.promotion}</div>
+    <details style="margin-top:10px"><summary>Incidents and why they are (not) used</summary>
+      ${l.incidents.length ? html`<table class="t"><thead><tr><th>Incident</th><th>Source</th><th>Outcome</th><th>Status</th><th>Reasons</th></tr></thead><tbody>
+        ${l.incidents.map(r => html`<tr><td><a href=${`#/cases/${r.incident_id}`}>${r.incident_id}</a></td><td class="muted">${r.provenance}${r.recording ? ` · ${r.recording}` : ""}</td>
+          <td>${r.outcome ? l.outcomes[r.outcome] : "—"}</td><td><span class=${`pill ${r.state === "ELIGIBLE" ? "ok" : r.state === "AWAITING_OUTCOME" ? "HIGH" : "pending"}`}>${r.state.replace("_", " ").toLowerCase()}</span></td>
+          <td class="muted" style="font-size:12.5px">${r.reasons.join(" · ") || "—"}</td></tr>`)}</tbody></table>` : html`<div class="empty">No incident yet.</div>`}
+    </details>
+  </div>`;
+}
+
+function OutcomeCard({ c, ctx, post }) {
+  const [o, setO] = useState("confirmed_fire");
+  const [note, setNote] = useState("");
+  const labels = { confirmed_fire: "It was a real fire", confirmed_nuisance: "Not a fire (work fumes or other nuisance)", confirmed_equipment_anomaly: "An equipment problem, no fire",
+    confirmed_normal: "Everything was normal", inconclusive: "Not sure" };
+  if (c.kind === "INSPECTION_FINDING") return null;
+  if (c.outcome) return html`<div class="card"><h2>What really happened <span class="r muted">confirmed</span></h2><b>${labels[c.outcome.label]}</b>
+    <div class="muted">Confirmed by ${c.outcome.by} · ${fmtWall(c.outcome.wall_ts)}${c.outcome.note ? ` · ${c.outcome.note}` : ""}</div></div>`;
+  if (!["VERIFIED", "CLOSED"].includes(c.status)) return null;
+  return html`<div class="card"><h2>What really happened? <span class="r muted">second person</span></h2>
+    ${ctx.role !== "verifier" ? html`<div class="muted">After the check, another authorized person confirms what really happened. Choose the role <b>Verifier</b>. This helps ARGOS learn; the technician cannot confirm their own case.</div>`
+      : html`<div class="stack"><select class="in" value=${o} onChange=${e => setO(e.target.value)}>${Object.entries(labels).map(([k, v]) => html`<option value=${k}>${v}</option>`)}</select>
+        <input type="text" placeholder="What did you see? (optional)" value=${note} onInput=${e => setNote(e.target.value)}/>
+        <button class="btn primary" onClick=${() => post("outcome", { person: ctx.names.verifier, outcome: o, note })}>Confirm what happened</button></div>`}
+  </div>`;
+}
+
 function Passport({ ctx }) {
   const [p, setP] = useState(null);
   usePoll(async () => setP(await api("/api/passport")), 3000, []);
@@ -621,8 +713,7 @@ function Passport({ ctx }) {
       <div class="card"><h2>Integrity</h2>
         <div class="row"><span class=${`pill ${p.integrity.ok ? "ok" : "bad"}`}>${p.integrity.ok ? "LOCAL CHAIN INTACT" : "CHAIN BROKEN"}</span><span class="muted">${p.integrity.events} events</span></div>
         <div class="hash" style="margin-top:8px">head ${p.integrity.head || "—"}</div>
-        <div class="row" style="margin-top:12px"><span class="pill pending">HEDERA: PENDING</span></div>
-        <div class="muted" style="font-size:12.5px;margin-top:6px">${p.hedera.note}. No blockchain transaction is shown because none has been made.</div></div>
+        <div class="muted" style="font-size:12.5px;margin-top:8px">Blockchain fingerprint: see "Hedera evidence" below.</div></div>
       <div class="card"><h2>History</h2><div class="grid g3">
         <div class="kpi"><div class="v">${p.counts.total}</div><div class="l">cases</div></div>
         <div class="kpi"><div class="v" style="color:var(--ok)">${p.counts.closed}</div><div class="l">closed (3 confirmations)</div></div>
@@ -634,6 +725,7 @@ function Passport({ ctx }) {
           <td class="mono">${fmtT(c.opened_data_ts, true)}</td><td>${c.action ? html`${c.action.text}<div class="muted">${c.technician}</div>` : "—"}</td><td>${c.verifier || "—"}</td>
           <td>${c.stabilization ? `${c.stabilization.measured_minutes}/${c.stabilization.required_minutes} min ${c.stabilization.passed ? "✓" : ""}` : "—"}</td></tr>`)}</tbody></table>`
         : html`<div class="empty">No case in this zone yet</div>`}</div>
+    <${HederaCard} toast=${ctx.toast}/>
     <div class="card"><h2>Drone inspection history <span class="r"><span class="pill sim">SIMULATED</span></span></h2>
       ${p.inspections?.missions?.length ? html`<table class="t"><thead><tr><th>Mission</th><th>Type</th><th>Checkpoints and results</th><th>Status</th><th>Case</th></tr></thead><tbody>
         ${p.inspections.missions.map(m => html`<tr><td><b>${m.id}</b><div class="muted">${fmtWall(m.created_at)}</div></td><td>${MODE_LABEL[m.mode]}<div class="muted">${ORIGIN_LABEL[m.origin]}</div></td>
@@ -687,6 +779,7 @@ function Evidence({ ctx }) {
         <tr><td><b>Prevents industrial fires</b></td><td>No dataset links detected anomalies to fires that were then avoided</td><td><span class="pill bad">not demonstrated</span></td></tr>
       </tbody></table>
       <div class="muted" style="margin-top:8px;font-size:12.5px">Full method, intervals and limitations: <a href="/reports/evaluation.md" target="_blank">ai/reports/evaluation.md</a>. Data provenance: docs/DATA_PROVENANCE_AUDIT.md.</div></div>
+    <${LearningCard} toast=${ctx.toast}/>
     <div class="grid g2">
       <div class="card"><h2>AI vs calibrated particle threshold (Industrial Hall)</h2><img class="fig" src="/reports/zone_fire_vs_nuisance.png" alt="zone results"/></div>
       <div class="card"><h2>Earlier than the conventional detector (lab)</h2><img class="fig" src="/reports/lead_time.png" alt="lead time"/></div>

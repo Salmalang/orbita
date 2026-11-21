@@ -183,6 +183,22 @@ class CaseManager:
                           actor=f"verifier:{verifier.strip()}", case_id=case_id)
         return c
 
+    # ---------------------------------------------------------------- outcome (label for learning)
+    def confirm_outcome(self, case_id: str, person: str, outcome: str, note: str) -> dict:
+        from learning.pipeline import OUTCOMES
+        c = self.get(case_id)
+        if outcome not in OUTCOMES:
+            raise WorkflowError(f"outcome must be one of {sorted(OUTCOMES)}")
+        if c["status"] not in ("VERIFIED", "CLOSED"):
+            raise WorkflowError("the real outcome is confirmed after the independent check")
+        if person.strip().lower() == (c.get("technician") or "").lower():
+            raise WorkflowError("the outcome must be confirmed by someone other than the technician")
+        c["outcome"] = {"label": outcome, "text": OUTCOMES[outcome], "by": person.strip(), "note": note.strip(), "wall_ts": _now()}
+        self.store.save_case(c)
+        self.store.append("outcome_confirmed", "human", {"outcome": outcome, "note": note.strip()},
+                          actor=f"verifier:{person.strip()}", case_id=case_id)
+        return c
+
     # ---------------------------------------------------------------- system check
     def stabilization_check(self, case_id: str, ticks: list[dict]) -> dict:
         """Count minutes of MEASURED readings after the corrective action in which every reporting node

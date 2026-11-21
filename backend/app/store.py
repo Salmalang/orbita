@@ -98,6 +98,20 @@ class Store:
         d["payload"] = json.loads(d["payload"])
         return d
 
+    def hash_at(self, seq: int) -> str | None:
+        """Recompute the chain from the start up to event `seq`; None if it is broken or missing."""
+        with self._lock:
+            rows = self._db.execute("SELECT * FROM events WHERE seq <= ? ORDER BY seq", (seq,)).fetchall()
+        prev = GENESIS
+        for r in rows:
+            rec = {"wall_ts": r["wall_ts"], "data_ts": r["data_ts"], "kind": r["kind"], "source": r["source"],
+                   "actor": r["actor"], "case_id": r["case_id"], "payload": json.loads(r["payload"])}
+            h = hashlib.sha256((prev + _canonical(rec)).encode()).hexdigest()
+            if r["prev_hash"] != prev or r["hash"] != h:
+                return None
+            prev = h
+        return prev if rows and rows[-1]["seq"] == seq else None
+
     def verify_chain(self) -> dict:
         with self._lock:
             rows = self._db.execute("SELECT * FROM events ORDER BY seq").fetchall()

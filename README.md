@@ -4,7 +4,7 @@
 
 Built for **AeroEntrepreneur 2026** (Tunisian Aeroday × Protection Civile × INJAZ Tunisia).
 
-> Prototype. Sensor data is a **historical replay of real recordings** (Industrial Hall dataset, controlled fire and nuisance experiments, 2023). The facility layout is illustrative. Human roles are demo roles. Drone inspection is a simulated workflow. Hedera anchoring is planned, not implemented.
+> Prototype. Sensor data is a **historical replay of real recordings** (Industrial Hall dataset, controlled fire and nuisance experiments, 2023). The facility layout is illustrative. Human roles are demo roles. Drone inspection is a simulated workflow. Hedera testnet anchoring is implemented but only runs once local credentials are configured (see below).
 
 ## What it does
 
@@ -80,14 +80,29 @@ One-minute video plan: [docs/DEMO_VIDEO_SCRIPT.md](docs/DEMO_VIDEO_SCRIPT.md).
 | Closure of patrol-finding cases | Based on a **simulated** follow-up inspection, labelled as such |
 | Facility layout, checkpoint positions, contacts | **Illustrative** |
 | Roles | Demo roles, no authentication |
-| Hedera anchoring | **Pending** (not implemented) |
+| Hedera anchoring | **Real code** for Hedera testnet (fingerprint only, mirror-node verification); inactive until `.env` holds testnet credentials |
+| AI learning from new incidents | **Data pipeline only**: outcome labels, eligibility, dataset manifest + SHA-256. No retraining has happened: replayed incidents come from recordings already used in training |
+
+## Hedera evidence (testnet)
+
+ARGOS stores a digital fingerprint of the incident history on Hedera so later changes can be detected. Only a small JSON snapshot is sent (chain id, last event number, chain-head SHA-256, UTC time, evidence type): never sensor data, names or files.
+
+1. Create a free testnet account at portal.hedera.com.
+2. Copy `.env.example` to `.env` (git-ignored) and fill `HEDERA_ACCOUNT_ID` and `HEDERA_PRIVATE_KEY`. Leave `HEDERA_TOPIC_ID` empty to create a topic on first anchor.
+3. Restart the server, open **Equipment History → Hedera evidence**, click **Anchor evidence to Hedera**, then **Verify on Hedera**.
+
+Verification reads the message back from the public mirror node and compares it with the stored snapshot and with a fresh recomputation of the local chain. Statuses: Verified on Hedera, Awaiting confirmation, Evidence mismatch, Hedera unavailable, Not anchored. Hedera proves a fingerprint existed at a consensus time; it does not prove sensor readings or labels are physically true.
+
+## AI learning (controlled)
+
+After the independent check, a second person confirms what really happened (real fire, nuisance, equipment problem, normal, not sure). An incident becomes training data only if: outcome confirmed by someone other than the technician, not inconclusive, not a simulated drone finding, evidence chain intact and verified on Hedera, and the recording is genuinely new (not already in the approved training data). **AI Evidence → AI learning** prepares a hashed dataset manifest, verifies it, can anchor its fingerprint, and refuses to train a candidate when there are no genuinely new verified incidents. A candidate is never promoted automatically.
 
 ## Tests
 
 ```bash
 .venv/Scripts/python -m pytest -q
 ```
-Covers dataset integrity, loaders, physics model, AI models, registry tamper detection, causal (no-future-data) features, risk engine, Safety Case rules (independent verifier, stabilization), event-chain tampering, API errors, UI assets and the full workflow on real data.
+Covers dataset integrity, loaders, physics model, AI models, registry tamper detection, causal (no-future-data) features, risk engine, Safety Case rules (independent verifier, stabilization), event-chain tampering, Hedera anchoring and verification (network mocked), learning eligibility and dataset hashing, API errors, UI assets and the full workflow on real data.
 
 ## Build tracker
 ```bash
@@ -103,6 +118,8 @@ Then open http://localhost:8765.
 | `ai/` | Models, evaluation, held-out models, registry with model cards |
 | `physics/` | Thermal energy-balance model fitted on real data (secondary) |
 | `backend/` | FastAPI: replay, risk engine, Safety Cases, event store |
+| `hedera/` | Hedera testnet anchoring and mirror-node verification |
+| `learning/` | Outcome eligibility, dataset manifests, leakage check |
 | `dashboard/` | Control-room interface (Preact + Chart.js, vendored, works offline) |
 | `docs/` | Audit, sector selection, MVP scope, datasets, requirements |
 | `scripts/` | Data audit, figures, build tracker |
