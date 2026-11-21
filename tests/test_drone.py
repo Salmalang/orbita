@@ -204,3 +204,17 @@ def test_drone_api_errors(api):
     assert api.post("/api/drone/missions/M-9999/actions/pause").status_code == 404
     assert api.post("/api/drone/missions/M-9999/actions/explode").status_code == 422
     assert api.post("/api/findings/F-9999/case", json={}).status_code == 404
+
+
+@needs_data
+def test_a_new_replay_run_opens_its_own_case_even_if_an_old_one_is_open(api):
+    api.post("/api/demo/reset")
+    for run in (1, 2):
+        api.post("/api/replay/load", json={"event_id": "Cable#4"})
+        for _ in range(400):
+            api.post("/api/replay/step", json={"ticks": 1})
+            if len([c for c in api.get("/api/cases").json() if c["kind"] == "SENSOR_ALERT"]) == run:
+                break
+    cases = [c for c in api.get("/api/cases").json() if c["kind"] == "SENSOR_ALERT"]
+    assert len(cases) == 2 and len({c["replay_run"] for c in cases}) == 2      # one case per replay run
+    assert all(c["status"] == "OPEN" for c in cases)

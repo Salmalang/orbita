@@ -162,3 +162,30 @@ table.t tr.click:hover td { background: var(--panel2); }
   .card { border-color: #999; background: #fff; }
   .muted, .dim { color: #333; }
 }
+
+/* ------------------------------------------------------------ product UX additions */
+.hero { display: flex; justify-content: space-between; align-items: center; gap: 18px; border-radius: 16px; padding: 22px 26px; border: 1px solid var(--line); background: var(--panel); }
+.hero .q { font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.hero .a { font-size: 26px; font-weight: 750; margin-top: 4px; }
+.hero .sub2 { color: var(--muted); margin-top: 6px; font-size: 13px; }
+.hero .lvl { font-size: 22px; font-weight: 800; letter-spacing: 1px; padding: 12px 20px; border-radius: 12px; white-space: nowrap; }
+.hero.NORMAL { border-color: rgba(34,197,94,.45); } .hero.NORMAL .lvl { background: rgba(34,197,94,.16); color: var(--ok); }
+.hero.WATCH { border-color: rgba(59,130,246,.5); } .hero.WATCH .lvl { background: rgba(59,130,246,.18); color: #8fb9ff; }
+.hero.HIGH { border-color: rgba(245,158,11,.6); } .hero.HIGH .lvl { background: rgba(245,158,11,.2); color: var(--accent2); }
+.hero.CRITICAL { border-color: var(--crit); background: linear-gradient(90deg, rgba(239,68,68,.18), var(--panel) 70%); } .hero.CRITICAL .lvl { background: var(--crit); color: #fff; animation: pulse 1.4s infinite; }
+.hero.NO_DATA .lvl, .hero.STANDBY .lvl { background: rgba(100,116,139,.25); color: #c2cad8; }
+.todo { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; }
+.todo .n { width: 24px; height: 24px; border-radius: 50%; background: var(--panel2); display: grid; place-items: center; font-weight: 700; font-size: 12px; color: var(--accent2); }
+.bar { height: 8px; background: var(--bg2); border-radius: 99px; overflow: hidden; margin: 8px 0 4px; }
+.bar i { display: block; height: 100%; background: linear-gradient(90deg, #7c3aed, #a78bfa); transition: width .5s; }
+.info { cursor: help; color: var(--muted); font-size: 12px; margin-left: 3px; }
+.nav .badge.warn { background: var(--high); color: #1a1205; }
+.guide { position: fixed; right: 20px; bottom: 20px; width: 380px; max-width: calc(100vw - 40px); background: var(--panel2); border: 1px solid var(--accent); border-radius: 14px; padding: 14px 16px; box-shadow: 0 16px 40px rgba(0,0,0,.5); z-index: 40; }
+.guide h3 { margin: 6px 0 4px; font-size: 16px; }
+.guide p { margin: 0 0 10px; color: #cfd6e4; font-size: 13.5px; }
+.guide .tagline { font-size: 10.5px; letter-spacing: 1.2px; color: var(--accent2); font-weight: 700; margin-top: 2px; }
+.guide .gstep { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+.modal { position: fixed; inset: 0; background: rgba(5,8,15,.7); display: grid; place-items: center; z-index: 60; padding: 20px; }
+.dialog { max-width: 760px; width: 100%; }
+.dialog .ev { min-height: 120px; }
+details > summary { list-style: none; margin-bottom: 8px; }

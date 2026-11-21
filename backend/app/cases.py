@@ -39,9 +39,11 @@ class CaseManager:
         self._ids = itertools.count(max(existing, default=0) + 1)
 
     # ---------------------------------------------------------------- opening
-    def open_case(self, *, zone: str, event_id: str, data_ts: str, decision: dict, snapshot: dict) -> dict:
+    def open_case(self, *, zone: str, event_id: str, data_ts: str, decision: dict, snapshot: dict,
+                  replay_run: int | None = None) -> dict:
         case = {
             "id": f"SC-{next(self._ids):04d}", "kind": "SENSOR_ALERT", "zone": zone, "replay_event": event_id,
+            "replay_run": replay_run,
             "status": "OPEN", "severity": decision["level"], "opened_wall_ts": _now(), "opened_data_ts": data_ts,
             "findings": decision["reasons"], "fire_nodes": decision["fire_nodes"],
             "evidence": snapshot, "recommended_inspection": (

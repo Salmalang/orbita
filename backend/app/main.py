@@ -43,6 +43,7 @@ class Runtime:
         self._last_level = "NORMAL"
         self._lock = threading.Lock()
         self.auto_pause = True
+        self.replay_run = 0        # each loaded replay is a separate run; alerts only attach to cases of the same run
 
     def on_tick(self, rec: dict, decision, engine: ReplayEngine) -> None:
         level = decision.level
@@ -62,10 +63,10 @@ class Runtime:
             self.store.append("alert", "risk", {"level": level, "reasons": decision.reasons,
                                                 "replay_event": engine.state.event_id}, data_ts=rec["t"])
         if level == "CRITICAL":
-            open_ = self.cases.open_cases(ZONE, kind="SENSOR_ALERT")
+            open_ = [c for c in self.cases.open_cases(ZONE, kind="SENSOR_ALERT") if c.get("replay_run") == self.replay_run]
             if not open_:
                 case = self.cases.open_case(zone=ZONE, event_id=engine.state.event_id, data_ts=rec["t"],
-                                            decision=decision.__dict__, snapshot=evidence)
+                                            decision=decision.__dict__, snapshot=evidence, replay_run=self.replay_run)
                 # MODE B: request a targeted inspection of the flagged area; it waits for operator approval
                 cps = self.drone.checkpoints_for_nodes(decision.fire_nodes)
                 m = self.drone.create_mission("TARGETED", origin="ALERT", checkpoints=cps, case_id=case["id"],
@@ -207,6 +208,8 @@ def replay_load(req: LoadReq):
     except KeyError as e:
         _err(e, 404)
     r._last_level = "NORMAL"
+    r.replay_run += 1
+    info = {**info, "replay_run": r.replay_run}
     r.store.append("replay_loaded", "system", info)
     return info
 
