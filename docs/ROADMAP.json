@@ -1,0 +1,27 @@
+{
+  "project": "AEROGUARD TRUST",
+  "deadline_utc": "2026-11-22T08:00:00Z",
+  "deadline_label": "Sun 22 Nov, 09:00 (Tunis)",
+  "parts": [
+    {"id": 0, "name": "Repo setup, requirements, data contracts", "weight": 5, "status": "done", "progress": 100,
+     "checks": ["Requirements checklist from the spec", "Shared data contracts", "Demo factory with standard-based thresholds", "11 tests passing"]},
+    {"id": 1, "name": "Physics-based sensor simulator", "weight": 10, "status": "todo", "progress": 0,
+     "checks": ["Joule heating + Newton cooling", "5 fault scenarios", "Labelled datasets", "Live streaming + fault injection", "Fixed-threshold baseline"]},
+    {"id": 2, "name": "AI anomaly detection + evaluation", "weight": 20, "status": "todo", "progress": 0,
+     "checks": ["Isolation Forest baseline", "Autoencoder main model", "Lead time vs fixed thresholds", "Validation on real NASA bearing data", "Model registry"]},
+    {"id": 3, "name": "Backend + risk engine", "weight": 10, "status": "todo", "progress": 0,
+     "checks": ["Ingestion API", "Explainable severity scoring", "Actions per severity", "Realtime events", "Audit log"]},
+    {"id": 4, "name": "Safety cases, 3 signatures, MEL", "weight": 10, "status": "todo", "progress": 0,
+     "checks": ["Case state machine", "3-signature closure", "Anti-cheat tests", "MEL rules", "Safety passport"]},
+    {"id": 5, "name": "Hedera anchoring", "weight": 10, "status": "todo", "progress": 0,
+     "checks": ["HCS topic on testnet", "Hash anchoring", "Integrity verification", "Tamper demo", "Offline retry queue"]},
+    {"id": 6, "name": "Drone dispatch + simulation", "weight": 8, "status": "todo", "progress": 0,
+     "checks": ["Route graph + docks", "ATC-style priority queue", "Simulated flight", "Thermal hotspot analysis", "Inspection rounds"]},
+    {"id": 7, "name": "Control-room dashboard", "weight": 15, "status": "todo", "progress": 0,
+     "checks": ["Live site map", "Sensor charts + AI score", "Case signing UI", "Passport + Hedera proofs", "Demo controls"]},
+    {"id": 8, "name": "Fire Pack + black box", "weight": 6, "status": "todo", "progress": 0,
+     "checks": ["Fire Pack page + QR + PDF", "Timeline replay"]},
+    {"id": 9, "name": "Model report, demo script, final check", "weight": 6, "status": "todo", "progress": 0,
+     "checks": ["MODEL_REPORT.md", "Deterministic demo script", "README complete", "Requirements re-checked"]}
+  ]
+}

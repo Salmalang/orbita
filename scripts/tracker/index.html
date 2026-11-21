@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AEROGUARD Build Tracker</title>
+<style>
+  :root {
+    --bg: #0b1220; --panel: #121b2e; --panel-2: #18233a; --line: #24324f;
+    --text: #e6ecf7; --muted: #8b9bb8; --accent: #f59e0b;
+    --done: #22c55e; --prog: #f59e0b; --todo: #475569; --bad: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between;
+           padding: 18px 28px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  h1 { margin: 0; font-size: 20px; letter-spacing: .5px; }
+  h1 span { color: var(--accent); }
+  .sub { color: var(--muted); font-size: 13px; }
+  .countdown { text-align: right; }
+  .countdown b { font-size: 22px; font-variant-numeric: tabular-nums; }
+  main { max-width: 1280px; margin: 0 auto; padding: 24px 28px 48px; display: grid; gap: 20px;
+         grid-template-columns: 2fr 1fr; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 16px; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .card h2 { margin: 0 0 14px; font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); }
+  .overall { grid-column: 1 / -1; display: flex; gap: 28px; align-items: center; flex-wrap: wrap; }
+  .big { font-size: 56px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+  .bar { height: 10px; background: var(--panel-2); border-radius: 99px; overflow: hidden; flex: 1; min-width: 200px; }
+  .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--done)); border-radius: 99px;
+             transition: width .6s ease; }
+  .stats { display: flex; gap: 22px; color: var(--muted); font-size: 13px; }
+  .stats b { color: var(--text); font-size: 18px; display: block; }
+  .part { display: grid; grid-template-columns: 34px 1fr 64px; gap: 12px; align-items: center;
+          padding: 12px 0; border-top: 1px solid var(--line); }
+  .part:first-of-type { border-top: 0; }
+  .num { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px;
+         background: var(--panel-2); border: 2px solid var(--todo); }
+  .done .num { border-color: var(--done); color: var(--done); }
+  .in_progress .num { border-color: var(--prog); color: var(--prog); }
+  .pname { font-weight: 600; }
+  .checks { color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+  .pbar { height: 5px; margin-top: 7px; background: var(--panel-2); border-radius: 9px; overflow: hidden; }
+  .pbar i { display: block; height: 100%; background: var(--todo); }
+  .done .pbar i { background: var(--done); } .in_progress .pbar i { background: var(--prog); }
+  .pct { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .req { display: flex; gap: 8px; align-items: baseline; padding: 5px 0; font-size: 13.5px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--todo); transform: translateY(1px); }
+  .dot.done { background: var(--done); } .dot.in_progress { background: var(--prog); }
+  .req .id { color: var(--muted); width: 28px; flex: none; font-variant-numeric: tabular-nums; }
+  .req .pts { margin-left: auto; color: var(--muted); white-space: nowrap; padding-left: 8px; }
+  details { border-top: 1px solid var(--line); padding: 8px 0; }
+  summary { cursor: pointer; font-weight: 600; font-size: 14px; list-style: none; display: flex; justify-content: space-between; }
+  summary::-webkit-details-marker { display: none; }
+  summary small { color: var(--muted); font-weight: 400; }
+  button { background: var(--accent); color: #111; border: 0; border-radius: 8px; padding: 8px 14px;
+           font-weight: 700; cursor: pointer; font-size: 13px; }
+  button:disabled { opacity: .5; cursor: wait; }
+  .tests { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .badge { font-weight: 700; font-size: 14px; }
+  .badge.ok { color: var(--done); } .badge.failed { color: var(--bad); } .badge.running { color: var(--prog); }
+  .fail { color: var(--bad); font: 12px Consolas, monospace; margin-top: 8px; white-space: pre-wrap; }
+  .commit { font-size: 13px; padding: 6px 0; border-top: 1px solid var(--line); }
+  .commit:first-of-type { border-top: 0; }
+  .commit code { color: var(--accent); margin-right: 6px; }
+  .commit span { color: var(--muted); float: right; font-size: 12px; }
+  .side { display: grid; gap: 20px; align-content: start; }
+  .error { grid-column: 1 / -1; background: #3b1219; border-color: var(--bad); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>AEROGUARD <span>TRUST</span> · Build tracker</h1>
+    <div class="sub">AeroEntrepreneur 2026 · refreshes every 5 s</div>
+  </div>
+  <div class="countdown">
+    <div class="sub" id="dl-label">Deadline</div>
+    <b id="countdown">--:--:--</b>
+  </div>
+</header>
+
+<main id="app">
+  <section class="card overall">
+    <div><div class="big" id="overall">0%</div><div class="sub">code complete (weighted)</div></div>
+    <div class="bar"><i id="overall-bar" style="width:0"></i></div>
+    <div class="stats">
+      <div><b id="parts-done">0/0</b>parts done</div>
+      <div><b id="req-done">0/0</b>requirements met</div>
+      <div><b id="pts-open">0</b>deliverable pts open</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Build parts</h2>
+    <div id="parts"></div>
+  </section>
+
+  <div class="side">
+    <section class="card">
+      <h2>Tests</h2>
+      <div class="tests">
+        <div><div class="badge" id="test-badge">never run</div><div class="sub" id="test-at"></div></div>
+        <button id="run-tests">Run tests</button>
+      </div>
+      <div class="fail" id="test-fail"></div>
+    </section>
+    <section class="card">
+      <h2>Spec requirements</h2>
+      <div id="reqs"></div>
+    </section>
+    <section class="card">
+      <h2>Recent commits</h2>
+      <div id="commits"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let deadline = null;
+const openSections = new Set(["Mandatory deliverables (§04) — upload to Google Drive before 09:00"]);
+
+function tick() {
+  if (!deadline) return;
+  let s = Math.max(0, Math.floor((deadline - Date.now()) / 1000));
+  const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); s %= 60;
+  $("countdown").textContent = `${h}h ${String(m).padStart(2,"0")}m ${String(s).padStart(2,"0")}s left`;
+}
+
+function render(d) {
+  if (d.error) {
+    $("app").insertAdjacentHTML("afterbegin", `<section class="card error">Tracker error: ${esc(d.error)}</section>`);
+    return;
+  }
+  const r = d.roadmap;
+  deadline = new Date(r.deadline_utc).getTime();
+  $("dl-label").textContent = "Deadline · " + r.deadline_label;
+  $("overall").textContent = r.overall_pct + "%";
+  $("overall-bar").style.width = r.overall_pct + "%";
+  $("parts-done").textContent = `${r.parts.filter(p => p.status === "done").length}/${r.parts.length}`;
+
+  $("parts").innerHTML = r.parts.map(p => `
+    <div class="part ${p.status}">
+      <div class="num">${p.id}</div>
+      <div>
+        <div class="pname">${esc(p.name)}</div>
+        <div class="checks">${p.checks.map(esc).join(" · ")}</div>
+        <div class="pbar"><i style="width:${p.progress}%"></i></div>
+      </div>
+      <div class="pct">${p.progress}%<br><small>w ${p.weight}</small></div>
+    </div>`).join("");
+
+  const all = d.requirements.flatMap(s => s.items);
+  $("req-done").textContent = `${all.filter(i => i.status === "done").length}/${all.length}`;
+  $("pts-open").textContent = all.filter(i => i.status !== "done" && /^\d+/.test(i.points))
+                                 .reduce((n, i) => n + parseInt(i.points, 10), 0);
+
+  $("reqs").innerHTML = d.requirements.map(s => {
+    const done = s.items.filter(i => i.status === "done").length;
+    return `<details ${openSections.has(s.title) ? "open" : ""} data-t="${esc(s.title)}">
+      <summary>${esc(s.title.replace(/\s*\(§.*$/, "").replace(/ — .*$/, ""))}<small>${done}/${s.items.length}</small></summary>
+      ${s.items.map(i => `<div class="req"><i class="dot ${i.status}"></i><span class="id">${esc(i.id)}</span>
+        <span>${esc(i.text)}</span>${i.points ? `<span class="pts">${esc(i.points)} pts</span>` : ""}</div>`).join("")}
+    </details>`;
+  }).join("");
+  document.querySelectorAll("#reqs details").forEach(el => el.addEventListener("toggle", () => {
+    el.open ? openSections.add(el.dataset.t) : openSections.delete(el.dataset.t);
+  }));
+
+  $("commits").innerHTML = d.commits.map(c =>
+    `<div class="commit"><code>${esc(c.hash)}</code>${esc(c.message)}<span>${esc(c.date)}</span></div>`).join("")
+    || `<div class="sub">No commits yet</div>`;
+
+  const t = d.tests;
+  $("test-badge").className = "badge " + (t.state || "");
+  $("test-badge").textContent = t.state === "running" ? "Running…" : (t.summary || t.state);
+  $("test-at").textContent = t.at ? "Last run " + new Date(t.at).toLocaleTimeString() : "";
+  $("test-fail").textContent = (t.failures || []).join("\n");
+  $("run-tests").disabled = t.state === "running";
+}
+
+async function refresh() {
+  try { render(await (await fetch("/api/status")).json()); }
+  catch (e) { $("test-badge").textContent = "tracker offline"; }
+}
+$("run-tests").onclick = async () => { $("run-tests").disabled = true; await fetch("/api/tests", {method: "POST"}); refresh(); };
+refresh(); setInterval(refresh, 5000); setInterval(tick, 1000);
+</script>
+</body>
+</html>

@@ -42,3 +42,9 @@ python -m venv .venv
 
 ## Team
 INSAT team. Names to be added.
+
+### Build tracker
+```bash
+.venv/Scripts/python scripts/tracker/server.py
+```
+Then open http://localhost:8765 to see build progress, spec requirements, tests and recent commits.
