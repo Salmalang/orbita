@@ -26,11 +26,16 @@ N sensor nodes are confident (P(fire) ≥ p) for 30 s. The pair (p, N) is chosen
 
 **Honest estimate (nested):** for each event, (p, N) is chosen using only the *other* events, then applied to it.
 
-| Result | AEROGUARD, nested (headline) | AEROGUARD, rule p≥0.95, N≥2 chosen on all events (optimistic) | Single particle threshold |
+| Result | AEROGUARD, nested (headline) | AEROGUARD, rule p≥0.95, N≥2 chosen on all events (optimistic) | Calibrated particle threshold, nested |
 |---|---|---|---|
-| Real fires detected | 16/17 = 94% (95% CI 73%–99%) | 17/17 | 17/17 |
-| Nuisances raising a fire alarm | 4/15 = 27% (95% CI 11%–52%) | 4/15 | 15/15 |
-| Median time from event start to alarm | 397.0 s | 371.0 s | – |
+| Real fires detected | 16/17 = 94% (95% CI 73%–99%) | 17/17 | 17/17 = 100% (95% CI 82%–100%) |
+| Nuisances raising a fire alarm | 4/15 = 27% (95% CI 11%–52%) | 4/15 | 3/15 = 20% (95% CI 7%–45%) |
+| Median time from event start to alarm | 397.0 s | 371.0 s | 617.0 s |
+| Background alarm episodes | see below | 13 | 0 |
+
+**Key finding:** a particle threshold calibrated with the same nested protocol performs **as well as or better than** the
+AI model on fire detection, nuisance rejection and background alarms on this dataset. The AI model alarms earlier
+(median), but its nuisance rejection advantage is not demonstrated against a well-calibrated simple rule.
 
 Rules selected across the nested folds: {'p>=0.95, nodes>=2': 31, 'p>=0.95, nodes>=3': 1}. The event missed in the nested estimate is the
 one for which leaving it out makes the stricter rule look best.
@@ -40,8 +45,11 @@ Background (rule p≥0.95, N≥2), 64.2 h of continuous recording including nigh
 unventilated hall), 1 during sensor warm-up (first 30 min of the recording). The 70-minute
 "post-event" window was defined **after** looking at where background alarms occur, so this split is descriptive.
 
-The particle threshold is set to half of the smallest fire peak, so it catches every fire. It is a
-simplified stand-in for an optical smoke detector, not a certified device.
+Particle baseline: a node alarms when its particle count exceeds its background by more than a threshold
+for 30 s; any node suffices. The threshold is chosen per held-out event from [250, 500, 1000, 1500, 2000, 3000] with the same criterion
+as the AI rule (selected: {1500: 32}). It is a simplified stand-in for an optical smoke detector, not a
+certified device. An earlier version of this report set the threshold from a stray single-row label and reported
+15/15 nuisance alarms for this baseline; that was a bug and has been corrected.
 
 Residual dependence: the out-of-fold probabilities of other events come from models that did see the held-out
 event, so the nested rule choice is not perfectly independent. With 32 events this is the best available split.
@@ -188,11 +196,11 @@ already contain labelled anomalies are excluded (`other/2`). Thresholds tuned on
 results on the others. F1 is point-wise; about 35 % of test points are anomalous, which favours permissive
 methods, so the false-alarm rate is shown next to it.
 
-| method | tuned | f1 | false_alarm_rate | missed_alarm_rate | anomalies_detected | median_detection_delay_s |
-|---|---|---|---|---|---|---|
-| Fixed k-sigma limits | k=2.5 | 0.782 | 0.466 | 0.11 | 16/17 | 3.0 |
-| PCA residual (Q statistic) | margin=0.8 | 0.669 | 0.224 | 0.404 | 17/17 | 38.0 |
-| MLP autoencoder | margin=0.8 | 0.776 | 0.409 | 0.152 | 17/17 | 4.0 |
+| method | tuned | tp | fp | fn | tn | experiments | f1 | false_alarm_rate | missed_alarm_rate | anomalies_detected | median_detection_delay_s |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Fixed k-sigma limits | k=2.5 | 5672 | 2466 | 702 | 2821 | 17 | 0.782 | 0.466 | 0.11 | 16/17 | 3.0 |
+| PCA residual (Q statistic) | margin=0.8 | 3800 | 1184 | 2574 | 4103 | 17 | 0.669 | 0.224 | 0.404 | 17/17 | 38.0 |
+| MLP autoencoder | margin=0.8 | 5408 | 2164 | 966 | 3123 | 17 | 0.776 | 0.409 | 0.152 | 17/17 | 4.0 |
 
 Reading: on this bench the autoencoder matches the classic k-sigma limits on F1 while detecting every anomaly and
 raising fewer false alarms. The gain is modest; it is reported as such.

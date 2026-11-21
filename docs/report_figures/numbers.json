@@ -1,0 +1,80 @@
+{
+  "zone_nested": {
+    "fire_events": 17,
+    "fires_detected": 16,
+    "fire_detection_rate": 0.941,
+    "nuisance_events": 15,
+    "nuisance_false_alarms": 4,
+    "nuisance_false_alarm_rate": 0.267,
+    "median_time_to_alarm_s": 397.0,
+    "rules_selected": {
+      "p>=0.95, nodes>=2": 31,
+      "p>=0.95, nodes>=3": 1
+    }
+  },
+  "zone_cm": {
+    "nested": {
+      "TP": 16,
+      "FN": 1,
+      "FP": 4,
+      "TN": 11
+    },
+    "fixed": {
+      "TP": 17,
+      "FN": 0,
+      "FP": 4,
+      "TN": 11
+    },
+    "baseline": {
+      "TP": 17,
+      "FN": 0,
+      "FP": 3,
+      "TN": 12
+    }
+  },
+  "background": {
+    "hours_all": 64.2,
+    "hours_live": 52.8,
+    "episodes_all": 13,
+    "episodes_live": 12,
+    "after_transition": 6
+  },
+  "zone_baseline": {
+    "fire_events": 17,
+    "fires_detected": 17,
+    "fire_detection_rate": 1.0,
+    "nuisance_events": 15,
+    "nuisance_false_alarms": 3,
+    "nuisance_false_alarm_rate": 0.2,
+    "median_time_to_alarm_s": 617.0,
+    "background_false_alarm_episodes": 0,
+    "bg_alarms_quiet": 0,
+    "bg_alarms_post_event": 0,
+    "bg_alarms_warmup": 0,
+    "background_hours": 64.2,
+    "thresholds_selected": {
+      "1500": 32
+    }
+  },
+  "zone_timing": {
+    "pairs": 16,
+    "ai_earlier": 14,
+    "base_earlier": 1,
+    "median_s": 195.0,
+    "q1_s": 52.5,
+    "q3_s": 390.0
+  },
+  "stabilization": {
+    "action": "2023-07-12 13:53:50+00:00",
+    "event_end": "2023-07-12 14:10:37+00:00",
+    "event_start": "2023-07-12 13:49:00+00:00",
+    "next_start": "2023-07-12 15:03:15+00:00",
+    "window_end": "2023-07-12 15:02:15+00:00",
+    "ticks_after": "410",
+    "live_after": "145",
+    "nonlive_after": "265",
+    "best_run_min": "0.5",
+    "monotonic": "True",
+    "held_share_post": "85.8"
+  }
+}

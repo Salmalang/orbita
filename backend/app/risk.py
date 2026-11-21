@@ -65,7 +65,7 @@ class RiskEngine:
 
     def _health(self, t: NodeTick) -> tuple[bool, str | None]:
         if t.p_fire is None or t.seconds_since_data > self.config.stale_after_s:
-            return False, f"{t.node_id}: no data for {int(t.seconds_since_data)} s"
+            return False, f"{t.node_id}: no live data for {int(t.seconds_since_data)} s (missing or held/repeated values)"
         if t.readings and self.config.frozen_ticks > 0:
             h = self._history[t.node_id]
             h.append(tuple(sorted(t.readings.items())))
@@ -94,7 +94,8 @@ class RiskEngine:
         healthy = len(ticks) - len(unhealthy)
 
         if healthy == 0:
-            return RiskDecision("NO_DATA", 0.0, ["No sensor node is reporting (data gap): the zone is NOT known to be safe"]
+            return RiskDecision("NO_DATA", 0.0, ["No sensor node is delivering live data (missing or held/repeated values): "
+                                                 "the zone is NOT known to be safe"]
                                 + reasons[:3], [], [], unhealthy, 0)
         if len(fire_nodes) >= c.min_nodes:
             level = "CRITICAL"

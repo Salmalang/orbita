@@ -29,6 +29,15 @@ UNITS = {"co_ppm": "ppm", "co2_ppm": "ppm", "voc_raw": "raw", "pm_total": "count
 SPEEDS = [1, 10, 30, 60, 120]
 
 
+def held_mask(df: pd.DataFrame, repeats: int = 3) -> pd.Series:
+    """True where a node's reading is identical (all channels) to its previous `repeats - 1` readings."""
+    from ingest.loaders.fire_sensors import HALL_FEATURES
+    d = df.sort_values(["sensor_id", "timestamp"])
+    same = d.groupby("sensor_id")[HALL_FEATURES].diff().abs().sum(axis=1).eq(0)
+    run = same.groupby([d["sensor_id"], (~same).cumsum()]).cumsum()
+    return (run >= repeats - 1).reindex(df.index)
+
+
 class HallData:
     """Loads the real hall recording once and precomputes causal features per node."""
 
@@ -39,6 +48,11 @@ class HallData:
         self.table["event"] = self.table["event"].where(~self.table["event"].str.endswith("#-1"), "")
         self.table["t10"] = self.table["timestamp"].dt.floor(f"{TICK_S}s")
         self.raw = self.hall.assign(t10=self.hall["timestamp"].dt.floor(f"{TICK_S}s"))
+        # Data-quality: after most experiments the recording repeats the last values for 20-45 min
+        # (all 13 channels identical every 10 s). Such rows are held values, not measurements.
+        self.raw["held"] = held_mask(self.raw)
+        self.table = self.table.merge(self.raw[["sensor_id", "timestamp", "held"]], on=["sensor_id", "timestamp"], how="left")
+        self.table["held"] = self.table["held"].fillna(False).astype(bool)
         ev = self.table[self.table["event"] != ""].groupby("event").agg(
             start=("timestamp", "min"), end=("timestamp", "max"), scenario=("scenario", "first"),
             truth=("label", "first"))
@@ -162,7 +176,9 @@ class ReplayEngine:
                 return False
             t = self._times[self._idx]
             self._idx += 1
-            rows = self._window[self._window["t10"] == t]
+            at_t = self._window[self._window["t10"] == t]
+            rows = at_t[~at_t["held"]]                     # only live measurements are analysed
+            held_nodes = int(at_t["held"].sum())
             raw = self._raw[self._raw["t10"] == t]
             fresh = {}
             if len(rows):
@@ -188,7 +204,7 @@ class ReplayEngine:
                    "max_p_nuisance": max((n["p_nuisance"] for n in fresh.values()), default=None),
                    "mean": {c: (float(np.mean([n["readings"][c] for n in fresh.values() if c in n["readings"]]))
                                 if fresh else None) for c in CHART_CHANNELS},
-                   "fire_nodes": decision.fire_nodes, "fresh_nodes": len(fresh),
+                   "fire_nodes": decision.fire_nodes, "fresh_nodes": len(fresh), "held_nodes": held_nodes,
                    "nodes": {k: [round(v["p_fire"], 4), round(v["p_nuisance"], 4)] for k, v in fresh.items()},
                    "healthy_nodes": decision.healthy_nodes}
             self.state.ticks.append(rec)

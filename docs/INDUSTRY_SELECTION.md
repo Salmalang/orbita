@@ -16,13 +16,13 @@ The MVP must rest on **one** sector and **one** use case supported by authentic 
 
 **Sector:** discrete manufacturing — **metal-working production halls** (automotive components, metal fabrication), where hot work such as welding and abrasive cutting is part of normal operation.
 
-**Use case (primary MVP):** **zone-level early fire detection that does not raise fire alarms for routine hot work**, followed by a verified response (Safety Case, simulated drone check, technician and independent verifier, measured stabilization).
+**Use case (primary MVP):** **zone-level early fire warning in halls where routine hot work produces smoke and gases**, followed by a verified response (Safety Case, simulated drone check, technician and independent verifier, measured stabilization).
 
 Why this one:
 1. It is the only candidate whose data directly contains **incipient fires and factory-type nuisances in an industrial hall**.
 2. The labels are good enough to test on **held-out events** (each recording judged by a model that never saw it).
-3. The data continues **after** each event, so "return to normal" can be checked on **real measurements**, not simulated.
-4. Nuisance alarms are a real operational pain: a system that alarms during welding gets disabled. Our evidence: a particle-only rule raises a fire alarm on 15/15 nuisances; the model on 4/15.
+3. The recording continues **after** each event. However, the audit found that for 20–45 minutes after most experiments the recording repeats held values (not live measurements), so "return to normal" can rarely be confirmed on this dataset; the prototype keeps such cases open instead of closing them on untrustworthy data.
+4. Nuisance alarms are a real operational pain: a system that alarms during welding gets disabled. The data let us measure this directly. Result: the AI model does not reject nuisances better than a calibrated particle threshold (4/15 vs 3/15 nuisance alarms), but it alarms earlier on 14 of 16 fires (median 195 s); see docs/MODEL_REPORT.md.
 5. It matches the team's preferred sector (automotive-component plants) without inventing equipment data: the monitored object is the **production hall zone**, not a specific machine.
 
 **Not chosen as primary, kept as clearly labelled secondary research demonstrations:** B (supports the "earlier than a conventional detector" message), C (railway compressor, exploratory), D (laboratory bench). They are never presented as data from the MVP facility.

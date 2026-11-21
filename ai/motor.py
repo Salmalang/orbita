@@ -98,7 +98,10 @@ def run(experiments, make) -> dict:
             delays.append(hits[0] if len(hits) else np.nan)  # samples (~1 s) from anomaly start
     yt, yp = np.concatenate(y_true), np.concatenate(y_pred)
     normal, anom = yt == 0, yt == 1
-    return {"f1": round(f1_score(yt, yp), 3),
+    return {"tp": int(((yt == 1) & (yp == 1)).sum()), "fp": int(((yt == 0) & (yp == 1)).sum()),
+            "fn": int(((yt == 1) & (yp == 0)).sum()), "tn": int(((yt == 0) & (yp == 0)).sum()),
+            "experiments": len(delays),
+            "f1": round(f1_score(yt, yp), 3),
             "false_alarm_rate": round(yp[normal].mean(), 3),
             "missed_alarm_rate": round(1 - yp[anom].mean(), 3),
             "anomalies_detected": f"{int(np.sum(np.isfinite(delays)))}/{len(delays)}",

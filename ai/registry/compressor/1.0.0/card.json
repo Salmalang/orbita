@@ -2,7 +2,7 @@
   "name": "compressor",
   "version": "1.0.0",
   "description": "Unsupervised compressor monitoring with physics residual; evaluated on 4 real failures.",
-  "created_at": "2026-11-21T15:54:17+00:00",
+  "created_at": "2026-11-21T17:01:59+00:00",
   "model_sha256": "f476b4e0bb7bf6f849d84a4bb402f6280c17bb4806e1b713509cc0a5ec794102",
   "training_data": {
     "metropt3": {

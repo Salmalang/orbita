@@ -1,6 +1,6 @@
 # AEROGUARD TRUST
 
-**Early fire detection for metal-working production halls that does not cry wolf during welding, with a verified response workflow.**
+**Earlier fire warning for metal-working production halls, with a verified response workflow.**
 
 Built for **AeroEntrepreneur 2026** (Tunisian Aeroday × Protection Civile × INJAZ Tunisia).
 
@@ -20,7 +20,8 @@ Certified fire alarms and emergency shutdown systems always remain independent o
 
 | Claim | Result | Status |
 |---|---|---|
-| Detect fires, ignore nuisances (Industrial Hall) | 16/17 fires (95 % CI 73–99 %); nuisance fire alarms 4/15 vs 15/15 for a particle threshold | held-out, small sample |
+| Detect fires in an industrial hall (held-out events) | AI 16/17 fires, 4/15 nuisance alarms; a calibrated particle threshold does as well (17/17, 3/15) and raises fewer background alarms | held-out, small sample |
+| Alarm earlier than a calibrated particle threshold | earlier on 14/16 fires detected by both, median 195 s | held-out, small sample |
 | Earlier than a conventional detector (lab) | electrical fires warned 3.8–11.9 min earlier; 6/7 fires earlier | laboratory |
 | Equipment failure early warning (railway compressor) | 4/4 failures detected, 2 before onset | exploratory, secondary |
 | Prevents fires | – | **not demonstrated** |
@@ -49,7 +50,7 @@ Open **http://localhost:8000**. The backend serves the interface; there is no se
 5. Switch the demo role (top right) to **Technician** → record the corrective action.
 6. Switch to **Verifier** → approve (must be a different person).
 7. Back to **Live monitoring** → **Resume** → the real post-fire readings play.
-8. In the case → **Run stabilization check** → closes after 15 min of measured normal readings.
+8. In the case → **Run stabilization check**. The case closes only after 15 consecutive minutes of **live** normal readings. In this dataset the recording holds its last values after each experiment, so the check reports *awaiting stabilization* and explains why: AEROGUARD does not close a case on data it cannot trust.
 9. **Safety Passport**, **Black Box** and **Fire Pack** show the result.
 10. Try **Exhaust#1** (nuisance: no case opens) and **Welding#1** (known limitation: the model never saw welding in training).
 

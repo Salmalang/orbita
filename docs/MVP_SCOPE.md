@@ -23,7 +23,7 @@ A safety manager of a metal-working production hall watches AEROGUARD TRUST in t
 | Live model inference during replay (no future data) | Operational |
 | Risk engine with reasons | Operational |
 | Alerts and Digital Safety Case with 3-step closure | Operational (demo roles, not real authentication) |
-| Stabilization check on measured post-event data | Operational |
+| Stabilization check on live post-event data | Operational. On this dataset no fire event has 15 min of live recovery data (held values after experiments), so cases correctly stay *awaiting stabilization* |
 | Drone inspection | **Simulated workflow**; reference thermal image labelled as illustrative (motor dataset, not this hall) |
 | Safety Passport of the zone | Operational (local records, integrity hash chain) |
 | Black Box timeline | Operational (from persisted events) |

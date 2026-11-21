@@ -49,9 +49,7 @@ def zone(fast: bool) -> dict:
     grid = pd.DataFrame([Z.evaluate_rule(oof, p, n)[1] for p, n in ZONE_RULES])
     events, chosen = Z.evaluate_rule(oof, *ZONE_DEFAULT)
     nested_events, nested = Z.nested_rule_evaluation(oof, ZONE_RULES)
-    baseline = Z.particle_threshold_baseline(table, threshold=float(
-        table.loc[table["label"] == "fire"].groupby("event")["pm_total_delta"].max().min() * 0.5))
-    base_summary = Z.summarize(baseline)
+    baseline, base_summary, _ = Z.particle_baseline(table)
     # final model on all data
     cols = Z.feature_columns(table)
     train = Z._training_rows(table, np.random.default_rng(0))
@@ -146,18 +144,18 @@ def figures(z, l, c) -> None:
     fig.tight_layout(rect=(0, 0.03, 1, 1)); fig.savefig(REPORTS / "lead_time.png", dpi=130); plt.close(fig)
 
     # zone: AI vs particle rule
-    ev, base = z["events"], z["baseline_events"]
+    ev, base = z["nested_events"], z["baseline_events"]
     labels = ["Fires detected", "Nuisances raising a fire alarm"]
     ai_vals = [ev.loc[ev.truth == "fire", "fire_alarm"].mean(), ev.loc[ev.truth == "nuisance", "fire_alarm"].mean()]
     b_vals = [base.loc[base.truth == "fire", "fire_alarm"].mean(), base.loc[base.truth == "nuisance", "fire_alarm"].mean()]
     fig, ax = plt.subplots(figsize=(7, 3.4))
     x = np.arange(2)
-    ax.bar(x - 0.2, b_vals, 0.4, label="single particle threshold", color="#868e96")
-    ax.bar(x + 0.2, ai_vals, 0.4, label="AEROGUARD zone model", color="#1971c2")
+    ax.bar(x - 0.2, b_vals, 0.4, label="calibrated particle threshold (nested)", color="#868e96")
+    ax.bar(x + 0.2, ai_vals, 0.4, label="AEROGUARD zone model (nested)", color="#1971c2")
     for xi, v in zip(x - 0.2, b_vals): ax.text(xi, v + 0.02, f"{v:.0%}", ha="center", fontsize=8)
     for xi, v in zip(x + 0.2, ai_vals): ax.text(xi, v + 0.02, f"{v:.0%}", ha="center", fontsize=8)
     ax.set_xticks(x, labels); ax.set_ylim(0, 1.15); ax.legend(fontsize=8)
-    ax.set_title("Industrial hall: real fires vs nuisances (welding, cutting, exhaust...)")
+    ax.set_title("Industrial hall, held-out events: AI model vs calibrated particle threshold")
     fig.text(0.99, 0.01, "Source: Indoor Fire Dataset, Industrial Hall, doi:10.17632/yghykzm4km.1", ha="right", fontsize=7, color="#666")
     fig.tight_layout(rect=(0, 0.03, 1, 1)); fig.savefig(REPORTS / "zone_fire_vs_nuisance.png", dpi=130); plt.close(fig)
 
@@ -205,11 +203,16 @@ N sensor nodes are confident (P(fire) ≥ p) for 30 s. The pair (p, N) is chosen
 
 **Honest estimate (nested):** for each event, (p, N) is chosen using only the *other* events, then applied to it.
 
-| Result | AEROGUARD, nested (headline) | AEROGUARD, rule p≥{ZONE_DEFAULT[0]}, N≥{ZONE_DEFAULT[1]} chosen on all events (optimistic) | Single particle threshold |
+| Result | AEROGUARD, nested (headline) | AEROGUARD, rule p≥{ZONE_DEFAULT[0]}, N≥{ZONE_DEFAULT[1]} chosen on all events (optimistic) | Calibrated particle threshold, nested |
 |---|---|---|---|
-| Real fires detected | {wilson(nz['fires_detected'], nz['fire_events'])} | {ch['fires_detected']}/{ch['fire_events']} | {b['fires_detected']}/{b['fire_events']} |
-| Nuisances raising a fire alarm | {wilson(nz['nuisance_false_alarms'], nz['nuisance_events'])} | {ch['nuisance_false_alarms']}/{ch['nuisance_events']} | {b['nuisance_false_alarms']}/{b['nuisance_events']} |
-| Median time from event start to alarm | {nz['median_time_to_alarm_s']} s | {ch['median_time_to_alarm_s']} s | – |
+| Real fires detected | {wilson(nz['fires_detected'], nz['fire_events'])} | {ch['fires_detected']}/{ch['fire_events']} | {wilson(b['fires_detected'], b['fire_events'])} |
+| Nuisances raising a fire alarm | {wilson(nz['nuisance_false_alarms'], nz['nuisance_events'])} | {ch['nuisance_false_alarms']}/{ch['nuisance_events']} | {wilson(b['nuisance_false_alarms'], b['nuisance_events'])} |
+| Median time from event start to alarm | {nz['median_time_to_alarm_s']} s | {ch['median_time_to_alarm_s']} s | {b['median_time_to_alarm_s']} s |
+| Background alarm episodes | see below | {ch['background_false_alarm_episodes']} | {b['background_false_alarm_episodes']} |
+
+**Key finding:** a particle threshold calibrated with the same nested protocol performs **as well as or better than** the
+AI model on fire detection, nuisance rejection and background alarms on this dataset. The AI model alarms earlier
+(median), but its nuisance rejection advantage is not demonstrated against a well-calibrated simple rule.
 
 Rules selected across the nested folds: {nz['rules_selected']}. The event missed in the nested estimate is the
 one for which leaving it out makes the stricter rule look best.
@@ -219,8 +222,11 @@ Background (rule p≥{ZONE_DEFAULT[0]}, N≥{ZONE_DEFAULT[1]}), {ch['background_
 unventilated hall), {ch['bg_alarms_warmup']} during sensor warm-up (first 30 min of the recording). The 70-minute
 "post-event" window was defined **after** looking at where background alarms occur, so this split is descriptive.
 
-The particle threshold is set to half of the smallest fire peak, so it catches every fire. It is a
-simplified stand-in for an optical smoke detector, not a certified device.
+Particle baseline: a node alarms when its particle count exceeds its background by more than a threshold
+for 30 s; any node suffices. The threshold is chosen per held-out event from {Z.PARTICLE_GRID} with the same criterion
+as the AI rule (selected: {b['thresholds_selected']}). It is a simplified stand-in for an optical smoke detector, not a
+certified device. An earlier version of this report set the threshold from a stray single-row label and reported
+15/15 nuisance alarms for this baseline; that was a bug and has been corrected.
 
 Residual dependence: the out-of-fold probabilities of other events come from models that did see the held-out
 event, so the nested rule choice is not perfectly independent. With 32 events this is the best available split.

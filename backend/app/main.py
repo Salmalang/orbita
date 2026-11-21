@@ -315,7 +315,13 @@ def evidence():
             "early_warning": cards.get("early_warning/1.0.0", {}).get("metrics"),
             "compressor": cards.get("compressor/1.0.0", {}).get("metrics"),
             "motor": cards.get("motor/1.0.0", {}).get("metrics"),
-            "holdout_models": [k for k in cards if k.startswith("zone_fire_holdout")]}
+            "holdout_models": [k for k in cards if k.startswith("zone_fire_holdout")],
+            "timing": _report_numbers().get("zone_timing")}
+
+
+def _report_numbers() -> dict:
+    p = ROOT / "docs" / "report_figures" / "numbers.json"
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
 
 
 @app.get("/api/reference-image")

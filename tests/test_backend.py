@@ -116,16 +116,22 @@ def test_fire_replay_full_safety_case_workflow(client):
     # stabilization right after verification: not enough measured normal data yet
     c = client.post(f"/api/cases/{cid}/stabilization").json()
     assert c["status"] == "VERIFIED" and not c["stabilization"]["passed"]
-    # replay the real recovery data, then the system check passes
+    # replay the rest of the real recording. After this experiment the dataset holds the last values
+    # (identical readings) until the next experiment, so there is NOT enough live recovery data:
+    # the case must stay open, awaiting stabilization, and say why.
     client.post("/api/replay/step", json={"ticks": 2000})
     c = client.post(f"/api/cases/{cid}/stabilization").json()
-    assert c["stabilization"]["passed"] and c["status"] == "CLOSED", c["stabilization"]
+    st = c["stabilization"]
+    assert c["status"] == "VERIFIED" and not st["passed"], st
+    assert st["non_live_ticks_after_action"] > st["measured_ticks_after_action"]
+    assert st["measured_minutes"] < st["required_minutes"]
     # passport and black box reflect it, chain intact
     p = client.get("/api/passport").json()
-    assert p["counts"]["closed"] == 1 and p["integrity"]["ok"] and p["hedera"]["status"] == "pending"
+    assert p["counts"]["open"] == 1 and p["counts"]["closed"] == 0 and p["integrity"]["ok"] and p["hedera"]["status"] == "pending"
     kinds = [e["kind"] for e in client.get(f"/api/timeline?case_id={cid}").json()]
-    for k in ("case_opened", "drone_requested", "technician_action", "verification_approved", "stabilization_check", "case_closed"):
+    for k in ("case_opened", "drone_requested", "technician_action", "verification_approved", "stabilization_check"):
         assert k in kinds
+    assert "case_closed" not in kinds
     sources = {e["source"] for e in client.get(f"/api/timeline?case_id={cid}").json()}
     assert "simulated" in sources and "human" in sources
 
@@ -155,3 +161,67 @@ def test_ui_and_static_assets_are_served(client):
     routes = {r.path for r in app.routes}
     for p in set(re.findall(r'"(/api/[a-z/_-]+)', js)):
         assert any(rt.startswith(p.rstrip("/")) for rt in routes), p
+
+
+
+# ----------------------------------------------------------------- stabilization rule (unit level)
+# These tick sequences are test inputs for the closure logic, not data used by any model or result.
+
+def _verified_case(tmp_path):
+    from backend.app.cases import CaseManager
+    from backend.app.store import Store
+    cm = CaseManager(Store(tmp_path / "s.db"))
+    c = cm.open_case(zone="HALL-A", event_id="test", data_ts="2023-07-12T14:00:00+00:00",
+                     decision={"level": "CRITICAL", "reasons": ["test"], "fire_nodes": ["a", "b"]}, snapshot={})
+    cm.record_action(c["id"], "Tech A", "replaced the damaged cable section", "2023-07-12T14:00:00+00:00")
+    cm.verify(c["id"], "Verifier B", True, "ok", "2023-07-12T14:00:00+00:00")
+    return cm, c["id"]
+
+
+def _stab_ticks(start, n, level="NORMAL", p=0.01, live=9):
+    t0 = pd.Timestamp(start)
+    return [{"t": (t0 + pd.Timedelta(seconds=10 * i)).isoformat(), "level": level, "max_p_fire": p,
+             "fresh_nodes": live} for i in range(n)]
+
+
+def test_stabilization_passes_with_15_min_of_live_normal_after_the_action(tmp_path):
+    cm, cid = _verified_case(tmp_path)
+    c = cm.stabilization_check(cid, _stab_ticks("2023-07-12T14:00:10+00:00", 90))
+    assert c["status"] == "CLOSED" and c["stabilization"]["measured_minutes"] == 15.0
+
+
+def test_stabilization_ignores_held_values_and_gaps(tmp_path):
+    cm, cid = _verified_case(tmp_path)
+    ticks = _stab_ticks("2023-07-12T14:00:10+00:00", 300, live=0)          # 50 min of held/missing data
+    c = cm.stabilization_check(cid, ticks)
+    assert c["status"] == "VERIFIED" and c["stabilization"]["measured_minutes"] == 0.0
+    c = cm.stabilization_check(cid, _stab_ticks("2023-07-12T14:00:10+00:00", 300, live=1))   # one live node is not enough
+    assert c["status"] == "VERIFIED"
+
+
+def test_stabilization_ignores_data_before_the_action_and_resets_on_abnormal(tmp_path):
+    cm, cid = _verified_case(tmp_path)
+    before = _stab_ticks("2023-07-12T13:30:00+00:00", 150)                  # normal, but before the action
+    after = _stab_ticks("2023-07-12T14:00:10+00:00", 60) + _stab_ticks("2023-07-12T14:10:10+00:00", 1, level="WATCH", p=0.6)         + _stab_ticks("2023-07-12T14:10:20+00:00", 60)
+    c = cm.stabilization_check(cid, before + after)
+    assert c["status"] == "VERIFIED" and c["stabilization"]["measured_minutes"] == 10.0
+
+
+def test_stabilization_requires_verification_first(tmp_path):
+    from backend.app.cases import CaseManager, WorkflowError
+    from backend.app.store import Store
+    cm = CaseManager(Store(tmp_path / "s.db"))
+    c = cm.open_case(zone="HALL-A", event_id="t", data_ts="2023-07-12T14:00:00+00:00",
+                     decision={"level": "CRITICAL", "reasons": ["t"], "fire_nodes": []}, snapshot={})
+    with pytest.raises(WorkflowError):
+        cm.stabilization_check(c["id"], _stab_ticks("2023-07-12T14:00:10+00:00", 200))
+
+
+def test_held_values_are_detected_in_the_real_recording():
+    from backend.app.replay import HallData
+    d = HallData()
+    share = d.raw["held"].mean()
+    assert 0.10 < share < 0.25                                         # about 15.5 % of rows
+    # the 44.5 min after the Cable#4 experiment are held values on every node
+    w = d.raw[(d.raw["timestamp"] > "2023-07-12 14:12:00+00:00") & (d.raw["timestamp"] < "2023-07-12 14:54:00+00:00")]
+    assert w["held"].all()

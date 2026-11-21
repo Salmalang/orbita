@@ -189,18 +189,41 @@ def nested_rule_evaluation(oof: pd.DataFrame, rules: list[tuple]) -> tuple[pd.Da
 
 # ---------------------------------------------------------------- conventional baseline
 
-def particle_threshold_baseline(t: pd.DataFrame, threshold: float) -> pd.DataFrame:
-    """Single-sensor rule standing in for an optical smoke detector: particles above background
-    by more than `threshold` for 30 s on any node -> fire alarm."""
-    out = []
-    for ev, test in t[t["event"] != ""].groupby("event"):
-        if test["timestamp"].nunique() < 6:
-            continue
-        g = test[["timestamp", "sensor_id"]].assign(p_fire=(test["pm_total_delta"] > threshold).astype(float))
-        times = zone_alarm_times(g, 0.5, min_nodes=1)
-        out.append({"event": ev, "scenario": test["scenario"].iloc[0], "truth": test["label"].iloc[0],
-                    "fire_alarm": len(times) > 0})
-    return pd.DataFrame(out)
+PARTICLE_GRID = [250, 500, 1000, 1500, 2000, 3000]
+
+
+def clean_events(t: pd.DataFrame) -> pd.DataFrame:
+    """Treat labels covering fewer than 6 timestamps (e.g. the stray single-row 'Cable#0') as background."""
+    t = t.copy()
+    t["event"] = t["event"].where(~t["event"].str.endswith("#-1"), "")
+    n = t[t["event"] != ""].groupby("event")["timestamp"].nunique()
+    t.loc[t["event"].isin(n[n < 6].index), "event"] = ""
+    return t
+
+
+def particle_rule_inputs(t: pd.DataFrame, threshold: float) -> pd.DataFrame:
+    """Single-sensor rule standing in for an optical smoke detector: a node 'alarms' when its particle
+    count is above its background by more than `threshold`; 30 s persistence; any one node suffices."""
+    return t[["timestamp", "sensor_id", "event", "scenario", "label"]].assign(
+        p_fire=(t["pm_total_delta"] > threshold).astype(float))
+
+
+def particle_baseline(t: pd.DataFrame, grid=PARTICLE_GRID) -> tuple[pd.DataFrame, dict, dict]:
+    """Baseline with the SAME protocol as the AI rule: for each event the threshold is chosen on the
+    other events with the same criterion (nested), then applied. Returns (events, summary, per-threshold)."""
+    t = clean_events(t)
+    per = {(thr, 1): evaluate_rule(particle_rule_inputs(t, thr), 0.5, 1) for thr in grid}
+    rows = []
+    for ev in per[(grid[0], 1)][0]["event"]:
+        rule = select_rule(per, exclude=ev)
+        rows.append({"event": ev, **per[rule][0].set_index("event").loc[ev].to_dict(), "threshold": rule[0]})
+    res = pd.DataFrame(rows)
+    s = summarize(res)
+    chosen = res["threshold"].mode().iloc[0]
+    s.update({k: per[(chosen, 1)][1][k] for k in ("background_false_alarm_episodes", "bg_alarms_quiet",
+                                                   "bg_alarms_post_event", "bg_alarms_warmup", "background_hours")})
+    s["thresholds_selected"] = res["threshold"].value_counts().to_dict()
+    return res, s, {thr: v[1] for (thr, _), v in per.items()}
 
 
 def summarize(res: pd.DataFrame) -> dict:

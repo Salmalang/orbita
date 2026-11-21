@@ -30,3 +30,6 @@ docs/cahier_des_charges.pdf
 
 # Trained model binaries (rebuilt by python -m ai.train); cards are committed
 ai/registry/**/model.joblib
+
+# Generated report HTML (the PDF is committed)
+docs/MODEL_REPORT.html

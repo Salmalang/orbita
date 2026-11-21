@@ -2,7 +2,7 @@
   "name": "early_warning",
   "version": "1.0.0",
   "description": "Unsupervised multi-gas early warning, fixed rule, vs conventional detector.",
-  "created_at": "2026-11-21T15:54:11+00:00",
+  "created_at": "2026-11-21T17:01:52+00:00",
   "model_sha256": "6dc00f83085a3c6f6e0ed2bec295c4ec264d184f3d2d7ca6718b5604fa18cf69",
   "training_data": {
     "indoor_lab_fire": {

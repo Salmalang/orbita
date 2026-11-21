@@ -2,7 +2,7 @@
   "name": "motor",
   "version": "1.0.0",
   "description": "Per-asset motor/pump anomaly detection (autoencoder).",
-  "created_at": "2026-11-21T15:55:08+00:00",
+  "created_at": "2026-11-21T17:03:09+00:00",
   "model_sha256": "e49f405f4030b7aead1b728eb515683aa53ef078489dcc1a2276069d25d2a770",
   "training_data": {
     "skab": {
@@ -21,6 +21,11 @@
       {
         "method": "Fixed k-sigma limits",
         "tuned": "k=2.5",
+        "tp": 5672,
+        "fp": 2466,
+        "fn": 702,
+        "tn": 2821,
+        "experiments": 17,
         "f1": 0.782,
         "false_alarm_rate": 0.466,
         "missed_alarm_rate": 0.11,
@@ -30,6 +35,11 @@
       {
         "method": "PCA residual (Q statistic)",
         "tuned": "margin=0.8",
+        "tp": 3800,
+        "fp": 1184,
+        "fn": 2574,
+        "tn": 4103,
+        "experiments": 17,
         "f1": 0.669,
         "false_alarm_rate": 0.224,
         "missed_alarm_rate": 0.404,
@@ -39,6 +49,11 @@
       {
         "method": "MLP autoencoder",
         "tuned": "margin=0.8",
+        "tp": 5408,
+        "fp": 2164,
+        "fn": 966,
+        "tn": 3123,
+        "experiments": 17,
         "f1": 0.776,
         "false_alarm_rate": 0.409,
         "missed_alarm_rate": 0.152,

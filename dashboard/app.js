@@ -328,13 +328,14 @@ function CaseDetail({ id, ctx }) {
                 <button class="btn danger" onClick=${() => post("verify", { verifier: names.verifier, approve: false, note: note || "Rejected" })}>Reject</button></div></div>`}
         </div>
         <div class="card"><h2>Stabilization check <span class="r muted">system, on measured data</span></h2>
-          <div class="muted" style="font-size:12.5px">${c.stabilization?.criterion || "15 min of measured readings with risk NORMAL and P(fire) < 0.2 on every reporting node, after the corrective action (data gaps excluded)."}</div>
-          ${c.stabilization && html`<div class="row" style="margin-top:10px"><span class=${`pill ${c.stabilization.passed ? "ok" : "bad"}`}>${c.stabilization.passed ? "PASSED" : "NOT YET"}</span>
+          <div class="muted" style="font-size:12.5px">${c.stabilization?.criterion || "15 consecutive minutes of LIVE readings (at least 2 nodes) with risk NORMAL and P(fire) < 0.2, after the corrective action. Gaps and held/repeated values do not count. Prototype rule, not a validated industrial standard."}</div>
+          ${c.stabilization && html`<div class="row" style="margin-top:10px"><span class=${`pill ${c.stabilization.passed ? "ok" : "bad"}`}>${c.stabilization.passed ? "PASSED" : "AWAITING STABILIZATION"}</span>
             <span>${c.stabilization.measured_minutes} / ${c.stabilization.required_minutes} min measured normal</span><span class="muted">checked up to ${fmtT(c.stabilization.checked_up_to)}</span></div>
             ${c.stabilization.note && html`<div class="muted" style="margin-top:6px;font-size:12.5px">${c.stabilization.note}</div>`}`}
           ${c.status === "VERIFIED" && html`<div class="row" style="margin-top:10px"><button class="btn primary" onClick=${() => post("stabilization")}>Run stabilization check</button>
             <span class="muted">If not enough data yet, continue the replay and check again.</span></div>`}
           ${c.status === "CLOSED" && html`<div class="banner info" style="margin-top:10px">✓ Closed with 3 confirmations: technician, independent verifier, and the measured readings.</div>`}
+          ${c.stabilization && !c.stabilization.passed && c.stabilization.non_live_ticks_after_action > 0 && html`<div class="banner info" style="margin-top:10px">ⓘ In this dataset the recording holds its last values for 20–45 min after each experiment (likely the ventilation phase), and the next experiment starts soon after. Held values are not measurements, so AEROGUARD keeps the case open rather than closing it on data it cannot trust.</div>`}
         </div>
         <div class="card"><h2>Audit trail</h2><${Timeline} events=${trail} compact/></div>
       </div>
@@ -448,18 +449,20 @@ function Evidence({ ctx }) {
   const [e, setE] = useState(null);
   useEffect(() => { api("/api/evidence").then(setE).catch(() => {}); }, []);
   if (!e) return html`<div class="page"><div class="empty">Loading…</div></div>`;
-  const z = e.zone_nested || {}, b = e.zone_particle_baseline || {}, w = e.early_warning || {}, c = e.compressor?.Autoencoder || {};
+  const z = e.zone_nested || {}, b = e.zone_particle_baseline || {}, w = e.early_warning || {}, c = e.compressor?.Autoencoder || {}, t = e.timing;
   return html`<div class="page">
     <div class="card"><h2>What the evidence supports</h2>
       <table class="t"><thead><tr><th>Claim</th><th>Evidence (real data)</th><th>Status</th></tr></thead><tbody>
-        <tr><td><b>Detects incipient fires and tells them apart from routine nuisances</b></td><td>Industrial Hall, each event held out: <b>${z.fires_detected}/${z.fire_events}</b> fires detected; <b>${z.nuisance_false_alarms}/${z.nuisance_events}</b> nuisances raised a fire alarm (particle threshold: ${b.nuisance_false_alarms}/${b.nuisance_events})</td><td><span class="pill ok">held-out estimate, small sample</span></td></tr>
+        <tr><td><b>Detects incipient fires in an industrial hall</b></td><td>Each event held out: AI <b>${z.fires_detected}/${z.fire_events}</b> fires, <b>${z.nuisance_false_alarms}/${z.nuisance_events}</b> nuisance alarms; a calibrated particle threshold does as well (${b.fires_detected}/${b.fire_events}, ${b.nuisance_false_alarms}/${b.nuisance_events}) with fewer background alarms</td><td><span class="pill ok">held-out, small sample</span></td></tr>
+        <tr><td><b>Alarms earlier than a calibrated particle threshold</b></td><td>${t ? `Earlier on <b>${t.ai_earlier}/${t.pairs}</b> fires detected by both, median <b>${Math.round(t.median_s)} s</b> earlier` : "see MODEL_REPORT"}</td><td><span class="pill ok">held-out, small sample</span></td></tr>
+        <tr><td><b>Rejects nuisances better than a simple rule</b></td><td>Not shown on this data (AI ${z.nuisance_false_alarms}/${z.nuisance_events} vs particle rule ${b.nuisance_false_alarms}/${b.nuisance_events}); welding fools both</td><td><span class="pill bad">not demonstrated</span></td></tr>
         <tr><td><b>Warns earlier than a conventional smoke detector</b></td><td>Laboratory fires: earlier in ${w.warned_before_detector}/${w.experiments_scored}; electrical fires ${(w.electrical_lead_time_min || []).join(", ")} min earlier</td><td><span class="pill ok">laboratory, rule fixed in advance</span></td></tr>
         <tr><td><b>Detects equipment failures before they happen</b></td><td>Railway compressor (MetroPT-3): ${c.detected}/4 failures detected, ${c.detected_before_start} before the reported start; ~${c.false_alarms_per_week} false alarms/week</td><td><span class="pill HIGH">exploratory, secondary demo</span></td></tr>
         <tr><td><b>Prevents industrial fires</b></td><td>No dataset links detected anomalies to fires that were then avoided</td><td><span class="pill bad">not demonstrated</span></td></tr>
       </tbody></table>
       <div class="muted" style="margin-top:8px;font-size:12.5px">Full method, intervals and limitations: <a href="/reports/evaluation.md" target="_blank">ai/reports/evaluation.md</a>. Data provenance: docs/DATA_PROVENANCE_AUDIT.md.</div></div>
     <div class="grid g2">
-      <div class="card"><h2>Fires vs nuisances (Industrial Hall)</h2><img class="fig" src="/reports/zone_fire_vs_nuisance.png" alt="zone results"/></div>
+      <div class="card"><h2>AI vs calibrated particle threshold (Industrial Hall)</h2><img class="fig" src="/reports/zone_fire_vs_nuisance.png" alt="zone results"/></div>
       <div class="card"><h2>Earlier than the conventional detector (lab)</h2><img class="fig" src="/reports/lead_time.png" alt="lead time"/></div>
       <div class="card"><h2>Real cable fire vs welding (raw sensors)</h2><img class="fig" src="/figures/hall_cable_vs_welding.png" alt="cable vs welding"/></div>
       <div class="card"><h2>What starts industrial fires (ARIA, France)</h2><img class="fig" src="/figures/aria_fire_causes.png" alt="causes"/></div>

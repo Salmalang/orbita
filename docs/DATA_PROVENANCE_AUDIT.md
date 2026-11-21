@@ -60,7 +60,9 @@ Audit of every dataset used by AEROGUARD TRUST, done on the **actual records** (
 |---|---|---|
 | 17/17 hall fires detected | Reproduced, but the decision rule (P ≥ 0.95, 2 nodes) was selected on the same held-out predictions | **Optimistic.** Nested leave-one-event-out selection gives **16/17 (95 % CI 73–99 %)**; now the headline |
 | 4/15 nuisances raise a fire alarm | Reproduced; unchanged under nested selection | Reported with interval (11–52 %) |
-| Background: 1 quiet, 11 post-event, 1 warm-up | Reproduced | The 70-min post-event window was defined after seeing the alarms; labelled descriptive |
+| Background: 1 quiet, 11 post-event, 1 warm-up | Reproduced | The 70-min post-event window was defined after seeing the alarms; labelled descriptive. 6 of the 13 episodes start within 15 min after live data resumes following held values (see below) |
+| "15/15 nuisances" for the particle baseline | **Bug** | The threshold was derived from a stray single-row label (peak 0). Calibrated with the same nested protocol, the particle rule gets 17/17 fires, 3/15 nuisances, 0 background alarms, i.e. **as good as or better than the AI** on those metrics; the AI alarms earlier on 14/16 fires (median 195 s). All documents corrected |
+| "Case closed with 44.7 min of measured normal readings" (Cable#4) | **Invalid** | Those 44.7 min are held values (identical on all nodes and channels). Live normal run after the action: 0.5 min. The case now stays awaiting stabilization |
 | Electrical fires warned 3.8–11.9 min before the detector | Reproduced | Confirmation is 5 readings = 5 s or 10 s depending on the file (earlier said 10 s) |
 | 6/7 lab fires warned earlier | Reproduced | "Stage 0" check covers little time; not a false-alarm rate |
 | Compressor 4/4 detected, 36 h and 47.5 h ahead, ~1 false alarm/week | Reproduced | **Exploratory**: autoencoder preferred after seeing the 4 failures; 47.5 h is at the window edge |
@@ -68,6 +70,14 @@ Audit of every dataset used by AEROGUARD TRUST, done on the **actual records** (
 | 30 passing tests | Reproduced | – |
 | 5 commits | **Wrong** | There were 4 commits |
 | "Physics model R² 0.38" | Reproduced | – |
+
+## Held values in the Industrial Hall recording (found in the second audit)
+
+15.5 % of rows have all 13 channels identical to the two previous readings on that node. These stretches last 20–45 minutes and start right after most experiments (17.9 % of background rows; 54 % of the green-waste recording); nights are live. Real sensors (CO₂, humidity, temperature) never stay perfectly constant, so these rows are treated as **held values, not measurements**. Consequences: (1) no live recovery data after the fires; (2) part of the background false alarms coincide with live data resuming; (3) background hours with live data: 52.8 h of 64.2 h. The models were **not** retrained to remove these rows (to avoid tuning to the results); the prototype ignores held rows at inference and in the stabilization check.
+
+## Source verification (second audit)
+
+All DOIs (10.17632/yghykzm4km.1, 10.17632/m85f9h6g9j.1, 10.17632/f3mjnbm9b3.1, 10.17632/m4sbt8hbvk.3, 10.24432/C5VW3R, 10.1038/s41597-022-01877-3) resolved to the stated records. The Mendeley API lists the Industrial Hall and Test Chamber datasets under **Otto von Guericke University Magdeburg** (contributor "Pascal V."), and the Indoor Laboratory dataset under **Amril Nazir, Zayed University**. The DOI 10.3390/fire5010011 resolves to MDPI, whose page refuses automated access (HTTP 403): **not fetched**. The data.gouv.fr ARIA page and the SKAB GitHub repository resolve.
 
 ## Remaining data limitations
 - No dataset comes from a Tunisian factory. The Protection Civile incident data has been requested.

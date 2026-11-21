@@ -2,7 +2,7 @@
   "name": "zone_fire",
   "version": "1.0.0",
   "description": "Real fire vs industrial nuisance vs normal, per zone, with 2-node coincidence.",
-  "created_at": "2026-11-21T15:54:10+00:00",
+  "created_at": "2026-11-21T17:01:51+00:00",
   "model_sha256": "a020b90fcd873c66c2076952321d7351277d5d6ff448886d1916f8f1468fadb1",
   "training_data": {
     "industrial_hall_fire": {
@@ -53,9 +53,17 @@
       "fires_detected": 17,
       "fire_detection_rate": 1.0,
       "nuisance_events": 15,
-      "nuisance_false_alarms": 15,
-      "nuisance_false_alarm_rate": 1.0,
-      "median_time_to_alarm_s": null
+      "nuisance_false_alarms": 3,
+      "nuisance_false_alarm_rate": 0.2,
+      "median_time_to_alarm_s": 617.0,
+      "background_false_alarm_episodes": 0,
+      "bg_alarms_quiet": 0,
+      "bg_alarms_post_event": 0,
+      "bg_alarms_warmup": 0,
+      "background_hours": 64.2,
+      "thresholds_selected": {
+        "1500": 32
+      }
     }
   }
 }
