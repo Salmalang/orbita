@@ -24,3 +24,6 @@ Thumbs.db
 # Organizer document (contains contact details); kept locally only
 docs/cahier_des_charges.pdf
 
+
+# Real datasets (downloaded by ingest/, never committed)
+data/

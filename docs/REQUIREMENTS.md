@@ -29,8 +29,8 @@ Status: ⬜ todo · 🟡 in progress · ✅ done · ➖ not applicable / team ta
 |---|---|---|---|
 | C1 | Realism and precision: scenarios technically consistent with aeronautical standards | MEL rules per EASA/FAA MEL concept; independent inspection per EASA Part-145; drone flights on approved routes; standards cited in docs | ⬜ |
 | C2 | Interactivity: the user can act, manipulate and decide in real time | Dashboard: inject faults, sign cases, approve/refuse MEL, dispatch drone | ⬜ |
-| C3 | Integration of real data | NASA IMS bearing run-to-failure dataset; Protection Civile database (requested) | ⬜ |
-| C4 | Physical simulation | Simulator: Joule heating (I²R), Newton cooling, thermal inertia, ISO 10816 vibration zones | ⬜ |
+| C3 | Integration of real data | 7 real public datasets (fire experiments, SKAB, MetroPT-3, thermal images, ARIA), see docs/DATASETS.md; Protection Civile database requested | ✅ |
+| C4 | Physical simulation | Energy-balance thermal model (Joule heating + Newton cooling) identified on real compressor data, `physics/thermal.py` | 🟡 |
 | C5 | BMC is mandatory | Team deliverable | ⬜ |
 | C6 | Safety: mainly the safety of people and the environment | Hazmat/environment in risk engine, Fire Pack, certified alarms stay independent | ⬜ |
 

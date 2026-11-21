@@ -27,7 +27,8 @@ Certified fire alarms always remain independent of AEROGUARD.
 |---|---|---|
 | `docs/` | Spec, [requirements checklist](docs/REQUIREMENTS.md), [data contracts](docs/CONTRACTS.md) | ✅ |
 | `backend/` | FastAPI platform, contracts, demo site | 🟡 |
-| `simulator/` | Physics-based sensor simulator | ⬜ |
+| `ingest/` | Real datasets: registry, hash-checked download, loaders ([list](docs/DATASETS.md)) | ✅ |
+| `physics/` | Thermal energy-balance model fitted on real data | ✅ |
 | `ai/` | Anomaly detection models and evaluation | ⬜ |
 | `hedera/` | Hedera Consensus Service anchoring | ⬜ |
 | `drone/` | Mission dispatcher and flight simulation | ⬜ |
@@ -37,6 +38,7 @@ Certified fire alarms always remain independent of AEROGUARD.
 ```bash
 python -m venv .venv
 .venv/Scripts/python -m pip install -r requirements.txt
+.venv/Scripts/python -m ingest download
 .venv/Scripts/python -m pytest -q
 ```
 

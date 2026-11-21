@@ -24,7 +24,7 @@ SensorReading ──► AI ──► Anomaly ──► Risk engine ──► Ris
 | `Site` | 120 m × 70 m; zones, assets, docking stations, emergency exits, hazardous materials, emergency contacts |
 | `Zone` | `id`, `name`, `area` (rectangle in metres) |
 | `Asset` | `id`, `type` (`electrical_panel`, `motor`, `compressor`, `storage`), `zone_id`, `criticality` 1–5, `position`, `nominal` (physics), `thresholds` (conventional alarms), `has_sensors` |
-| `Nominal` | physics for the simulator: rated current, ambient temperature, thermal resistance (°C/W), thermal time constant τ (s), electrical resistance (Ω) for I²R heating, base vibration, base gas |
+| `Nominal` | physical parameters of the (fictional) demo site, used by the dashboard: rated current, ambient temperature, thermal resistance (°C/W), thermal time constant τ (s), electrical resistance (Ω) for I²R heating, base vibration, base gas |
 | `Thresholds` | fixed alarm levels: the **baseline the AI must beat** |
 
 Threshold sources:

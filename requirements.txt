@@ -1,2 +1,7 @@
 pydantic>=2.9
 pytest>=8
+numpy>=2.0
+pandas>=2.2
+matplotlib>=3.9
+openpyxl>=3.1
+pillow>=10

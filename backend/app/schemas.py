@@ -62,7 +62,7 @@ class Thresholds(_Model):
 
 
 class Nominal(_Model):
-    """Physical parameters used by the simulator (simulation physique)."""
+    """Physical parameters of a demo-site asset (used for display and physics checks)."""
     rated_current_a: float = Field(ge=0)
     ambient_temp_c: float = 25.0
     thermal_resistance_c_per_w: float = Field(gt=0, description="steady-state °C rise per watt dissipated")
