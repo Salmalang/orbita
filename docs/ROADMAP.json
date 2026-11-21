@@ -75,14 +75,14 @@
       "id": 5,
       "name": "Control-room interface",
       "weight": 18,
-      "status": "in_progress",
-      "progress": 90,
+      "status": "done",
+      "progress": 100,
       "checks": [
-        "Overview, monitoring, cases, passport, black box, fire pack, evidence",
-        "Charts on real replay",
-        "Manual browser run of the full journey",
-        "2 UI bugs found and fixed",
-        "No automated browser test yet"
+        "Overview answers 3 questions",
+        "Drone Operations page",
+        "Kind-aware Safety Cases",
+        "Guided demo, 2 scenarios",
+        "Browser-tested, all 9 screens, no console errors"
       ]
     },
     {
@@ -92,24 +92,24 @@
       "status": "done",
       "progress": 100,
       "checks": [
-        "Case opening from alert",
-        "Technician action",
-        "Independent verifier",
-        "Measured stabilization check",
-        "Closure rules enforced"
+        "Sensor cases: live-data stabilization, held values refused",
+        "Patrol-finding cases: follow-up inspection closure",
+        "Independent verifier enforced",
+        "One case per replay run"
       ]
     },
     {
       "id": 7,
-      "name": "Passport, Black Box, Fire Pack, drone (simulated)",
+      "name": "Passport, Black Box, Fire Pack, drone operations (simulated)",
       "weight": 10,
       "status": "done",
       "progress": 100,
       "checks": [
-        "Zone passport + hash chain",
-        "Timeline from persisted events",
-        "Fire Pack (illustrative site)",
-        "Simulated drone workflow"
+        "Preventive patrols + simulated scheduler",
+        "Alert-triggered inspections with approval",
+        "Findings -> Safety Cases",
+        "Passport inspection history",
+        "Black Box drone events"
       ]
     },
     {
@@ -129,13 +129,13 @@
       "name": "End-to-end test, model report, docs",
       "weight": 10,
       "status": "in_progress",
-      "progress": 60,
+      "progress": 75,
       "checks": [
-        "MODEL_REPORT.md + PDF (rendered and inspected)",
-        "Held-value audit + stabilization regression tests",
-        "Nested calibrated baseline (bug fixed)",
-        "README run guide + dependency lock",
-        "Automated browser test: not yet"
+        "MODEL_REPORT.md + PDF",
+        "DEMO_VIDEO_SCRIPT.md",
+        "README guided demo + real vs simulated",
+        "58 tests",
+        "Automated browser test script: not committed"
       ]
     }
   ]

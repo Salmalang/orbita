@@ -341,7 +341,7 @@ function CaseDetail({ id, ctx }) {
       <div class="row"><a href="#/cases" class="btn sm ghost">← Safety Cases</a><h2 style="margin:0;font-size:20px">${c.id}</h2>
         <span class=${`pill ${c.status}`}>${c.status.replaceAll("_", " ")}</span><span class=${`pill ${c.severity}`}>${c.severity}</span>
         <span class=${`pill ${isFinding ? "sim" : "rec"}`}>${isFinding ? "FROM DRONE PATROL · ILLUSTRATIVE" : "FROM SENSOR AI · REAL DATA REPLAY"}</span>
-        ${c.escalations ? html`<span class="pill bad">fire signal returned after action ×${c.escalations}</span>` : ""}</div>
+        ${c.escalations ? html`<span class="pill bad" title="The recorded fire signature was still present or came back after the corrective action was recorded">fire signal after action ×${c.escalations}</span>` : ""}</div>
       <span class="muted">${c.zone} · opened ${isFinding ? fmtWall(c.opened_wall_ts) : `at recorded time ${fmtT(c.opened_data_ts, true)} (${c.replay_event})`}</span>
     </div>
     <div class="steps">${steps.map(([t, w], i) => html`<div class=${`step ${done[i] ? "done" : i === cur ? "cur" : ""}`}>
@@ -583,6 +583,13 @@ function Passport({ ctx }) {
           <td class="mono">${fmtT(c.opened_data_ts, true)}</td><td>${c.action ? html`${c.action.text}<div class="muted">${c.technician}</div>` : "—"}</td><td>${c.verifier || "—"}</td>
           <td>${c.stabilization ? `${c.stabilization.measured_minutes}/${c.stabilization.required_minutes} min ${c.stabilization.passed ? "✓" : ""}` : "—"}</td></tr>`)}</tbody></table>`
         : html`<div class="empty">No case in this zone yet</div>`}</div>
+    <div class="card"><h2>Drone inspection history <span class="r"><span class="pill sim">SIMULATED</span></span></h2>
+      ${p.inspections?.missions?.length ? html`<table class="t"><thead><tr><th>Mission</th><th>Type</th><th>Checkpoints and results</th><th>Status</th><th>Case</th></tr></thead><tbody>
+        ${p.inspections.missions.map(m => html`<tr><td><b>${m.id}</b><div class="muted">${fmtWall(m.created_at)}</div></td><td>${MODE_LABEL[m.mode]}<div class="muted">${ORIGIN_LABEL[m.origin]}</div></td>
+          <td class="muted">${m.checkpoints.map(x => `${x.label}${x.result ? `: ${x.result}` : ""}`).join(" · ")}</td>
+          <td><span class=${`pill ${m.status === "COMPLETED" ? "ok" : m.status === "CANCELLED" ? "pending" : "WATCH"}`}>${m.status.replace("_", " ")}</span></td>
+          <td>${m.case_id ? html`<a href=${`#/cases/${m.case_id}`}>${m.case_id}</a>` : "—"}</td></tr>`)}</tbody></table>`
+        : html`<div class="empty">No drone inspection yet.</div>`}</div>
     <div class="card"><h2>Model provenance <span class="r muted">which data produced which model</span></h2>
       <table class="t"><thead><tr><th>Model</th><th>Model file SHA-256</th><th>Training data SHA-256</th></tr></thead><tbody>
         ${p.models.map(m => html`<tr><td><b>${m.name}</b> <span class="muted">${m.version}</span></td><td class="hash">${m.model_sha256}</td><td class="hash">${m.training_data_sha256}</td></tr>`)}</tbody></table></div>

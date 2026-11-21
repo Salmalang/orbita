@@ -41,33 +41,46 @@ python -m venv .venv
 
 Open **http://localhost:8000**. The backend serves the interface; there is no separate frontend build. On macOS/Linux use `.venv/bin/python`.
 
-## Demo walkthrough (about 3 minutes)
+## Guided demo (recommended for the jury)
 
-1. **Live monitoring** → choose **Cable#4** (real cable fire) → speed 60× or 120× → **Start replay**.
-2. Watch the model's P(fire) rise on the chart and the hall map turn red. At **CRITICAL** a Safety Case opens and the replay **pauses automatically**.
-3. Open the case: AI findings with the recorded readings, recommended inspection.
-4. **Drone inspection** (simulated): request → approve → launch → complete.
-5. Switch the demo role (top right) to **Technician** → record the corrective action.
-6. Switch to **Verifier** → approve (must be a different person).
-7. Back to **Live monitoring** → **Resume** → the real post-fire readings play.
-8. In the case → **Run stabilization check**. The case closes only after 15 consecutive minutes of **live** normal readings. In this dataset the recording holds its last values after each experiment, so the check reports *awaiting stabilization* and explains why: AEROGUARD does not close a case on data it cannot trust.
-9. **Safety Passport**, **Black Box** and **Fire Pack** show the result.
-10. Try **Exhaust#1** (nuisance: no case opens) and **Welding#1** (known limitation: the model never saw welding in training).
+Click **▶ Start Guided Demo** (top right). Each step explains what you see; its button performs the real action in the application.
 
-Use **Reset demo** (sidebar) to start again.
+**Scenario 1 · Preventive drone inspection (simulated drone, illustrative finding)**
+Patrol schedule → start the full patrol → watch the drone visit the checkpoints → record an illustrative finding (blocked east exit) → open a Safety Case → technician action → independent verification → follow-up drone inspection marks the exit clear → case closes (simulated inspection evidence, labelled).
 
-## Feature status
+**Scenario 2 · Real-data AI early warning (real recording, held-out model)**
+Overview → load the authentic **Cable#4** recording → replay at 60× → CRITICAL when two sensors agree; a Safety Case opens and the replay pauses → approve the alert-triggered drone inspection → technician action → independent verification → resume the replay → closure check **refuses** to close because the post-fire recording repeats held values → Equipment Passport → Black Box.
 
-| Feature | Status |
+Use **Reset demo** (sidebar) or "Start from a clean slate" in the picker to begin again. Try also **Exhaust#1** (nuisance: no case opens) and **Welding#1** (known limitation: the model never saw welding).
+
+One-minute video plan: [docs/DEMO_VIDEO_SCRIPT.md](docs/DEMO_VIDEO_SCRIPT.md).
+
+## Screens
+
+| Screen | What it answers |
 |---|---|
-| Replay of real recordings, live inference with held-out models, no future data | ✅ operational |
-| Risk engine, alerts, Safety Case workflow with enforced rules | ✅ operational (demo roles, no real authentication) |
-| Stabilization measured on real post-event readings | ✅ operational |
-| Safety Passport, Black Box, local SHA-256 hash chain | ✅ operational |
-| Emergency Fire Pack (printable) | ✅ operational, layout/contacts illustrative |
-| Drone inspection | 🟣 simulated workflow, no imagery invented |
-| Hedera anchoring | ⏳ planned (shown as "pending") |
-| Real sensors, real drone, authentication, multi-site | ⏳ planned |
+| Overview | Is my facility safe? What needs attention? What should I do next? Next patrol, drone status, findings |
+| Live Monitoring | Replay of real recordings, AI fire/nuisance likelihood per sensor, risk level with reasons |
+| Drone Operations | Preventive patrols (scheduled or manual), routes and checkpoints, live position, findings, approvals, history |
+| Safety Cases | Investigations from sensor alerts or patrol findings; action, independent verification, closure rules |
+| Equipment Passport | Zone history, cases, inspections, integrity chain, model provenance |
+| Black Box | Every event in order, labelled by source (recorded data, model, risk engine, human demo role, simulated) |
+| Emergency Fire Pack | Printable emergency sheet for responders |
+| AI Evidence | What the real data supports and what it does not |
+
+## Real versus simulated
+
+| Component | Status |
+|---|---|
+| Sensor readings | **Real** recordings (Industrial Hall dataset, staged experiments), replayed |
+| AI inference during replay | **Real** held-out models, causal features, no future data |
+| Risk engine, Safety Case rules, independent verification, held-value detection | **Real** logic, tested |
+| Stabilization check (sensor cases) | **Real** logic on replayed live readings; refuses held/missing data |
+| Drone movement, missions, scheduler, findings | **Simulated** (no physical drone, no imagery, no validated vision/thermal model) |
+| Closure of patrol-finding cases | Based on a **simulated** follow-up inspection, labelled as such |
+| Facility layout, checkpoint positions, contacts | **Illustrative** |
+| Roles | Demo roles, no authentication |
+| Hedera anchoring | **Pending** (not implemented) |
 
 ## Tests
 
