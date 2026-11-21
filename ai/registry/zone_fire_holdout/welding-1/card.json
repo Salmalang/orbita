@@ -1,0 +1,25 @@
+{
+  "name": "zone_fire_holdout",
+  "version": "welding-1",
+  "description": "Zone model trained without Welding#1, used to replay Welding#1 out-of-sample.",
+  "created_at": "2026-11-21T15:59:15+00:00",
+  "model_sha256": "7e14d42081e5991ee8708d852a1fce332bf030ab7373832c595a9ef2f6f5657b",
+  "training_data": {
+    "industrial_hall_fire": {
+      "industrial_hall.csv": "b431b611a44e4282510bd53158aaa71512554481433d8f3a90f9475c17134839"
+    }
+  },
+  "training_data_sha256": "0da547c24cedce6b6037086803d6bfc908efa4fffc9db3db4f3c9f305bbdd906",
+  "config": {
+    "p_fire": 0.95,
+    "min_nodes": 2,
+    "confirm_samples": 3,
+    "baseline_window": "15min",
+    "baseline_gap": "3min",
+    "excluded_event": "Welding#1"
+  },
+  "metrics": {
+    "excluded_event": "Welding#1",
+    "training_events": 32
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "zone_fire_holdout",
+  "version": "cable-4",
+  "description": "Zone model trained without Cable#4, used to replay Cable#4 out-of-sample.",
+  "created_at": "2026-11-21T15:58:50+00:00",
+  "model_sha256": "858fdaa0924c2ab4e779de9e7be8fb38ae8e4dd9efe952ad2b1c31d68c18bca4",
+  "training_data": {
+    "industrial_hall_fire": {
+      "industrial_hall.csv": "b431b611a44e4282510bd53158aaa71512554481433d8f3a90f9475c17134839"
+    }
+  },
+  "training_data_sha256": "0da547c24cedce6b6037086803d6bfc908efa4fffc9db3db4f3c9f305bbdd906",
+  "config": {
+    "p_fire": 0.95,
+    "min_nodes": 2,
+    "confirm_samples": 3,
+    "baseline_window": "15min",
+    "baseline_gap": "3min",
+    "excluded_event": "Cable#4"
+  },
+  "metrics": {
+    "excluded_event": "Cable#4",
+    "training_events": 32
+  }
+}

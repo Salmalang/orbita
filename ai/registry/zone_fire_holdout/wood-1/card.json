@@ -1,0 +1,25 @@
+{
+  "name": "zone_fire_holdout",
+  "version": "wood-1",
+  "description": "Zone model trained without Wood#1, used to replay Wood#1 out-of-sample.",
+  "created_at": "2026-11-21T15:59:02+00:00",
+  "model_sha256": "c2ac72e727087639e62e6ce59bbd97a9db800fcba3b350c077088325c30a87cb",
+  "training_data": {
+    "industrial_hall_fire": {
+      "industrial_hall.csv": "b431b611a44e4282510bd53158aaa71512554481433d8f3a90f9475c17134839"
+    }
+  },
+  "training_data_sha256": "0da547c24cedce6b6037086803d6bfc908efa4fffc9db3db4f3c9f305bbdd906",
+  "config": {
+    "p_fire": 0.95,
+    "min_nodes": 2,
+    "confirm_samples": 3,
+    "baseline_window": "15min",
+    "baseline_gap": "3min",
+    "excluded_event": "Wood#1"
+  },
+  "metrics": {
+    "excluded_event": "Wood#1",
+    "training_events": 32
+  }
+}
