@@ -140,3 +140,18 @@ def test_tampering_breaks_the_chain(tmp_path):
     s._db.commit()
     v = s.verify_chain()
     assert not v["ok"] and v["broken_at_seq"] == 1
+
+
+def test_ui_and_static_assets_are_served(client):
+    html = client.get("/").text
+    assert "app.js" in html and "vendor/chart.umd.js" in html
+    for path in ("/app.js", "/styles.css", "/vendor/htm-preact-standalone.js", "/vendor/chart.umd.js"):
+        r = client.get(path)
+        assert r.status_code == 200 and len(r.content) > 1000, path
+    js = client.get("/app.js").text
+    # every API path the UI calls must exist on the backend
+    import re
+    from backend.app.main import app
+    routes = {r.path for r in app.routes}
+    for p in set(re.findall(r'"(/api/[a-z/_-]+)', js)):
+        assert any(rt.startswith(p.rstrip("/")) for rt in routes), p

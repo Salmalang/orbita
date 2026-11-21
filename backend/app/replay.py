@@ -189,6 +189,7 @@ class ReplayEngine:
                    "mean": {c: (float(np.mean([n["readings"][c] for n in fresh.values() if c in n["readings"]]))
                                 if fresh else None) for c in CHART_CHANNELS},
                    "fire_nodes": decision.fire_nodes, "fresh_nodes": len(fresh),
+                   "nodes": {k: [round(v["p_fire"], 4), round(v["p_nuisance"], 4)] for k, v in fresh.items()},
                    "healthy_nodes": decision.healthy_nodes}
             self.state.ticks.append(rec)
             self.state.cursor = t
@@ -219,6 +220,21 @@ class ReplayEngine:
     def series(self, since: int = 0) -> dict:
         with self._lock:
             return {"from": since, "ticks": self.state.ticks[since:]}
+
+    def node_history(self, node_id: str) -> dict:
+        """Readings and model outputs of one node up to the replay cursor (never beyond it)."""
+        with self._lock:
+            if self._window is None or self.state.cursor is None:
+                return {"node_id": node_id, "points": []}
+            raw = self._raw[(self._raw["sensor_id"] == node_id) & (self._raw["t10"] <= self.state.cursor)]
+            probs = {r["t"]: r["nodes"].get(node_id) for r in self.state.ticks if node_id in r.get("nodes", {})}
+            pts = []
+            for _, r in raw.iterrows():
+                t = r["t10"].isoformat()
+                pr = probs.get(t)
+                pts.append({"t": t, **{c: float(r[c]) for c in UNITS},
+                            "p_fire": pr[0] if pr else None, "p_nuisance": pr[1] if pr else None})
+            return {"node_id": node_id, "units": UNITS, "points": pts}
 
     def recent_ticks(self, seconds: float) -> list[dict]:
         with self._lock:

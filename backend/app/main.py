@@ -39,6 +39,7 @@ class Runtime:
         self.engine = ReplayEngine(self.data, on_tick=self.on_tick)
         self._last_level = "NORMAL"
         self._lock = threading.Lock()
+        self.auto_pause = True
 
     def on_tick(self, rec: dict, decision, engine: ReplayEngine) -> None:
         level = decision.level
@@ -60,9 +61,14 @@ class Runtime:
         if level == "CRITICAL":
             open_ = self.cases.open_cases(ZONE)
             if not open_:
-                self.cases.open_case(zone=ZONE, event_id=engine.state.event_id, data_ts=rec["t"],
-                                     decision=decision.__dict__, snapshot=evidence)
-            else:
+                case = self.cases.open_case(zone=ZONE, event_id=engine.state.event_id, data_ts=rec["t"],
+                                            decision=decision.__dict__, snapshot=evidence)
+                if self.auto_pause:
+                    engine.pause()   # the operator stops the replay to respond, as in a real control room
+                    self.store.append("replay_auto_paused", "system", {"reason": f"Safety Case {case['id']} opened"},
+                                      data_ts=rec["t"], case_id=case["id"])
+            elif open_[0]["status"] != "OPEN":
+                # fire signature back after the corrective action: that is a real escalation
                 self.cases.escalate(open_[0]["id"], rec["t"], decision.__dict__)
 
     def cursor(self) -> str | None:
@@ -203,6 +209,13 @@ def replay_state():
 @app.get("/api/replay/series")
 def replay_series(since: int = 0):
     return rt().engine.series(max(0, since))
+
+
+@app.get("/api/replay/node/{node_id}")
+def replay_node(node_id: str):
+    if node_id not in {n["id"] for n in FACILITY["nodes"]}:
+        _err(KeyError(f"unknown node {node_id}"), 404)
+    return rt().engine.node_history(node_id)
 
 
 # ------------------------------------------------------------------------------ alerts / cases

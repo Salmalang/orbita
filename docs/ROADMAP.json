@@ -61,8 +61,8 @@
       "id": 4,
       "name": "Backend: replay, risk engine, persistence",
       "weight": 13,
-      "status": "todo",
-      "progress": 0,
+      "status": "done",
+      "progress": 100,
       "checks": [
         "Held-out models per demo event",
         "Causal replay (no future data)",
@@ -75,22 +75,22 @@
       "id": 5,
       "name": "Control-room interface",
       "weight": 18,
-      "status": "todo",
-      "progress": 0,
+      "status": "in_progress",
+      "progress": 90,
       "checks": [
-        "Overview",
-        "Live replay with charts",
-        "Alerts",
-        "Evidence page",
-        "Browser-tested"
+        "Overview, monitoring, cases, passport, black box, fire pack, evidence",
+        "Charts on real replay",
+        "Manual browser run of the full journey",
+        "2 UI bugs found and fixed",
+        "No automated browser test yet"
       ]
     },
     {
       "id": 6,
       "name": "Safety Case workflow",
       "weight": 12,
-      "status": "todo",
-      "progress": 0,
+      "status": "done",
+      "progress": 100,
       "checks": [
         "Case opening from alert",
         "Technician action",
@@ -103,8 +103,8 @@
       "id": 7,
       "name": "Passport, Black Box, Fire Pack, drone (simulated)",
       "weight": 10,
-      "status": "todo",
-      "progress": 0,
+      "status": "done",
+      "progress": 100,
       "checks": [
         "Zone passport + hash chain",
         "Timeline from persisted events",
@@ -128,8 +128,8 @@
       "id": 9,
       "name": "End-to-end test, model report, docs",
       "weight": 10,
-      "status": "todo",
-      "progress": 0,
+      "status": "in_progress",
+      "progress": 30,
       "checks": [
         "Automated browser run of the demo",
         "MODEL_REPORT.md",

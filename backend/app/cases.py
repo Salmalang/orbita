@@ -147,10 +147,16 @@ class CaseManager:
         need = STABILIZATION_MIN * 60 // 10
         ok = good >= need
         last_t = after[-1]["t"] if after else None
+        measured_after = sum(1 for t in after if t.get("fresh_nodes", 0) > 0)
         result = {"passed": ok, "measured_minutes": round(good * 10 / 60, 1), "required_minutes": STABILIZATION_MIN,
                   "criterion": f"{STABILIZATION_MIN} min of measured readings with risk NORMAL and P(fire) < {STABLE_P_FIRE} "
                                "on every reporting node, after the corrective action (data gaps excluded)",
-                  "last_interruption": broken_at, "checked_up_to": last_t, "wall_ts": _now()}
+                  "last_interruption": broken_at, "checked_up_to": last_t, "wall_ts": _now(),
+                  "measured_ticks_after_action": measured_after,
+                  "note": None if ok else ("No measured data after the corrective action yet: resume the replay. "
+                                           "If the recording has ended, the case stays open awaiting stabilization; "
+                                           "it is never closed on simulated data." if measured_after == 0 else
+                                           "Not enough consecutive normal readings yet: continue the replay and check again.")}
         c["stabilization"] = result
         if ok:
             c["status"] = "CLOSED"
