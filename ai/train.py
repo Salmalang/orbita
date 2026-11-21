@@ -48,6 +48,7 @@ def zone(fast: bool) -> dict:
         oof.to_pickle(oof_path)
     grid = pd.DataFrame([Z.evaluate_rule(oof, p, n)[1] for p, n in ZONE_RULES])
     events, chosen = Z.evaluate_rule(oof, *ZONE_DEFAULT)
+    nested_events, nested = Z.nested_rule_evaluation(oof, ZONE_RULES)
     baseline = Z.particle_threshold_baseline(table, threshold=float(
         table.loc[table["label"] == "fire"].groupby("event")["pm_total_delta"].max().min() * 0.5))
     base_summary = Z.summarize(baseline)
@@ -56,14 +57,26 @@ def zone(fast: bool) -> dict:
     train = Z._training_rows(table, np.random.default_rng(0))
     model = Z.make_model().fit(train[cols], train["label"])
     card = registry.save("zone_fire", VERSION, {"model": model, "features": cols}, metrics={
-        "evaluation": "leave-one-event-out (each fire/nuisance recording unseen during training)",
-        "chosen_rule": chosen, "particle_threshold_baseline": base_summary},
+        "evaluation": "leave-one-event-out model + nested leave-one-event-out rule selection",
+        "nested_estimate": nested, "chosen_rule_in_sample_optimistic": chosen,
+        "particle_threshold_baseline": base_summary},
         config={"p_fire": ZONE_DEFAULT[0], "min_nodes": ZONE_DEFAULT[1], "confirm_samples": Z.CONFIRM,
                 "baseline_window": Z.BASELINE, "baseline_gap": Z.BASELINE_GAP},
         datasets=["industrial_hall_fire"],
         description="Real fire vs industrial nuisance vs normal, per zone, with 2-node coincidence.")
     return {"grid": grid, "events": events, "chosen": chosen, "baseline": base_summary,
-            "baseline_events": baseline, "card": card}
+            "baseline_events": baseline, "card": card, "nested": nested, "nested_events": nested_events}
+
+
+def wilson(k: int, n: int, z: float = 1.96) -> str:
+    """95 % Wilson score interval, to show how uncertain small-sample rates are."""
+    if n == 0:
+        return "n/a"
+    p = k / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * np.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+    return f"{k}/{n} = {p:.0%} (95% CI {max(0, c - h):.0%}–{min(1, c + h):.0%})"
 
 
 def lead() -> dict:
@@ -150,7 +163,10 @@ def figures(z, l, c) -> None:
 
 
 def write_report(z, l, c, m) -> None:
-    ch, b = z["chosen"], z["baseline"]
+    ch, b, nz = z["chosen"], z["baseline"], z["nested"]
+    ne = z["nested_events"][["event", "truth", "fire_alarm", "time_to_alarm_s", "rule_p_fire", "rule_min_nodes"]]
+    lm = l["metrics"]
+    ae = c["models"]["Autoencoder"][0]
     grid = z["grid"][["p_fire", "min_nodes", "fires_detected", "fire_events", "nuisance_false_alarms",
                       "nuisance_events", "bg_alarms_quiet", "bg_alarms_post_event", "bg_alarms_warmup",
                       "median_time_to_alarm_s"]]
@@ -165,8 +181,18 @@ def write_report(z, l, c, m) -> None:
 
 All numbers below are **measured** on real public datasets ({', '.join(['Industrial Hall', 'Indoor Laboratory', 'MetroPT-3', 'SKAB'])}).
 Nothing is synthetic. Rebuild with `.venv/Scripts/python -m ai.train`. Model version {VERSION}.
+Provenance and data-quality findings: [docs/DATA_PROVENANCE_AUDIT.md](../../docs/DATA_PROVENANCE_AUDIT.md).
 
-## 1. Zone model: real fire or industrial nuisance?
+## Status of each claim
+
+| Claim | Evidence | Status |
+|---|---|---|
+| 1. **Fire detection** in an industrial hall, telling fires from nuisances | Industrial Hall, leave-one-event-out + nested rule selection | **Held-out estimate** (small sample, wide intervals) |
+| 2. **Earlier than a conventional detector** | Indoor Laboratory fires, rule fixed in advance | **Held-out by construction** (no training), 7 fires; laboratory, not a factory |
+| 3. **Equipment anomaly / failure detection** | MetroPT-3 compressor (4 failures), SKAB motor bench | **Exploratory** for the compressor (model choice made after seeing the 4 failures); held-out tuning split for SKAB |
+| 4. **Prevention of industrial fires** | None | **Not demonstrated.** No dataset links detected anomalies to fires that were then avoided |
+
+## 1. Zone model: real fire or industrial nuisance? (primary MVP model)
 
 Gradient-boosted trees on features relative to each sensor node's recent background (CO, CO₂, H₂, VOC,
 particles by size, temperature, humidity). **Leave-one-event-out**: each of the {len(ev)} recordings is judged by
@@ -174,22 +200,30 @@ a model that never saw it. Welding and abrasive cutting have a single recording 
 **completely unseen** sources.
 
 Decision rule: **coincidence detection** (as in "double-knock" fire systems): the zone alarms when at least
-{ZONE_DEFAULT[1]} sensor nodes are confident (P(fire) ≥ {ZONE_DEFAULT[0]}) for 30 s.
+N sensor nodes are confident (P(fire) ≥ p) for 30 s. The pair (p, N) is chosen by a criterion fixed in advance
+(detect every fire, then fewest nuisance alarms, then fewest background alarms, then fastest).
 
-| Result (chosen rule) | AEROGUARD | Single particle threshold |
-|---|---|---|
-| Real fires detected | {ch['fires_detected']}/{ch['fire_events']} | {b['fires_detected']}/{b['fire_events']} |
-| Nuisances raising a fire alarm | {ch['nuisance_false_alarms']}/{ch['nuisance_events']} | {b['nuisance_false_alarms']}/{b['nuisance_events']} |
-| Median time from event start to alarm | {ch['median_time_to_alarm_s']} s | – |
-| Background alarms in {ch['background_hours']} h of continuous recording (incl. nights): quiet periods | {ch['bg_alarms_quiet']} | – |
-| Background alarms: within 70 min after an event (smoke lingering, unventilated hall) | {ch['bg_alarms_post_event']} | – |
-| Background alarms: sensor warm-up (first 30 min of the recording) | {ch['bg_alarms_warmup']} | – |
+**Honest estimate (nested):** for each event, (p, N) is chosen using only the *other* events, then applied to it.
 
-The particle threshold is set to half of the smallest fire peak, so it catches every fire.
+| Result | AEROGUARD, nested (headline) | AEROGUARD, rule p≥{ZONE_DEFAULT[0]}, N≥{ZONE_DEFAULT[1]} chosen on all events (optimistic) | Single particle threshold |
+|---|---|---|---|
+| Real fires detected | {wilson(nz['fires_detected'], nz['fire_events'])} | {ch['fires_detected']}/{ch['fire_events']} | {b['fires_detected']}/{b['fire_events']} |
+| Nuisances raising a fire alarm | {wilson(nz['nuisance_false_alarms'], nz['nuisance_events'])} | {ch['nuisance_false_alarms']}/{ch['nuisance_events']} | {b['nuisance_false_alarms']}/{b['nuisance_events']} |
+| Median time from event start to alarm | {nz['median_time_to_alarm_s']} s | {ch['median_time_to_alarm_s']} s | – |
 
-**How the rule was chosen** (criterion fixed before comparing): detect every fire; among those rules, fewest
-nuisance alarms; then fewest background alarms. The rule is selected on the same out-of-fold predictions it is
-reported on (two parameters only), which slightly flatters it.
+Rules selected across the nested folds: {nz['rules_selected']}. The event missed in the nested estimate is the
+one for which leaving it out makes the stricter rule look best.
+
+Background (rule p≥{ZONE_DEFAULT[0]}, N≥{ZONE_DEFAULT[1]}), {ch['background_hours']} h of continuous recording including nights:
+{ch['bg_alarms_quiet']} alarm(s) in quiet periods, {ch['bg_alarms_post_event']} within 70 min after an event (smoke lingering,
+unventilated hall), {ch['bg_alarms_warmup']} during sensor warm-up (first 30 min of the recording). The 70-minute
+"post-event" window was defined **after** looking at where background alarms occur, so this split is descriptive.
+
+The particle threshold is set to half of the smallest fire peak, so it catches every fire. It is a
+simplified stand-in for an optical smoke detector, not a certified device.
+
+Residual dependence: the out-of-fold probabilities of other events come from models that did see the held-out
+event, so the nested rule choice is not perfectly independent. With 32 events this is the best available split.
 
 **Remaining nuisance alarms**: ethanol, the two fog-machine "smoke" runs and welding. Welding is a single
 recording, so here the model had **never seen welding** during training. On a real site, welding recordings
@@ -201,14 +235,21 @@ All rules tested (trade-off between catching fires and ignoring nuisances):
 
 {_md(grid)}
 
-Per event (chosen rule):
+Per event (nested estimate; rule chosen without that event):
 
-{_md(ev)}
+{_md(ne)}
 
 ## 2. Early warning vs the conventional smoke detector
 
-Unsupervised and **fixed before looking at results**: each recording's first {L.CALIBRATION_S} s define normal; a warning
-is raised when ≥ {L.MIN_CHANNELS} gas channels exceed a robust z-score of {L.Z_THRESHOLD} for 10 s.
+Unsupervised, no training: each recording's first {L.CALIBRATION_S} s define normal; a warning
+is raised when ≥ {L.MIN_CHANNELS} channels exceed a robust z-score of {L.Z_THRESHOLD} for {L.CONFIRM} consecutive readings
+(5 s for the 1 Hz files, 10 s for `electrical_1` and `electrical_2`, which are sampled every 2 s).
+The threshold, channel count and noise floors were set before the per-experiment results were computed;
+the sensitivity table below shows other settings.
+
+Headline: warned before the conventional detector in {wilson(lm['warned_before_detector'], lm['experiments_scored'])};
+electrical fires: {lm['electrical_lead_time_min']} minutes earlier. "Stage 0" (authors' no-fire label) is short in most
+recordings, so the false-warning check covers little time; it is not a false-alarm rate.
 
 {_md(lr[['experiment', 'source', 'detector_min', 'aeroguard_min', 'lead_min', 'warned_before_detector', 'false_warning_in_stage0', 'first_channel']])}
 
@@ -232,14 +273,18 @@ reported failure counts as an early warning.
 
 {_md(comp_ev)}
 
-Reading: the autoencoder detects all 4 failures and warns 36 h and 47.5 h ahead for two of them, at the cost of
-about one false alarm per week. The 47.5 h warning is at the edge of the 48 h window and may partly be chance.
-Isolation Forest raises fewer false alarms but only detects failures after they start.
+Reading (**exploratory**): the autoencoder detects {ae['detected']}/4 failures and alarms before the reported start for
+{ae['detected_before_start']} of them, at about {ae['false_alarms_per_week']} false alarm episodes per week of normal operation. The 47.5 h
+warning is at the edge of the 48 h window and may be a coincidental alarm. Isolation Forest raises fewer false alarms
+but alarms only after failures start. Both models are shown because the choice between them was made after seeing
+the 4 failures. This is a railway compressor, used here as evidence for the method, not as factory data.
 
-## 4. Motor / pump anomalies (SKAB)
+## 4. Motor / pump anomalies (SKAB, laboratory bench)
 
-First 400 samples of each experiment = normal reference (SKAB convention). Thresholds tuned on the 16
-`valve1` experiments, results on the 18 others.
+First 400 samples of each experiment = normal reference (SKAB convention). Experiments whose first 400 samples
+already contain labelled anomalies are excluded (`other/2`). Thresholds tuned on the `valve1` experiments,
+results on the others. F1 is point-wise; about 35 % of test points are anomalous, which favours permissive
+methods, so the false-alarm rate is shown next to it.
 
 {_md(m['table'])}
 

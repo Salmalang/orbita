@@ -2,7 +2,7 @@
   "name": "motor",
   "version": "1.0.0",
   "description": "Per-asset motor/pump anomaly detection (autoencoder).",
-  "created_at": "2026-11-21T15:36:31+00:00",
+  "created_at": "2026-11-21T15:55:08+00:00",
   "model_sha256": "e49f405f4030b7aead1b728eb515683aa53ef078489dcc1a2276069d25d2a770",
   "training_data": {
     "skab": {
@@ -21,29 +21,29 @@
       {
         "method": "Fixed k-sigma limits",
         "tuned": "k=2.5",
-        "f1": 0.772,
-        "false_alarm_rate": 0.461,
-        "missed_alarm_rate": 0.122,
-        "anomalies_detected": "17/18",
+        "f1": 0.782,
+        "false_alarm_rate": 0.466,
+        "missed_alarm_rate": 0.11,
+        "anomalies_detected": "16/17",
         "median_detection_delay_s": 3.0
       },
       {
         "method": "PCA residual (Q statistic)",
         "tuned": "margin=0.8",
-        "f1": 0.66,
-        "false_alarm_rate": 0.238,
-        "missed_alarm_rate": 0.407,
-        "anomalies_detected": "18/18",
-        "median_detection_delay_s": 42.0
+        "f1": 0.669,
+        "false_alarm_rate": 0.224,
+        "missed_alarm_rate": 0.404,
+        "anomalies_detected": "17/17",
+        "median_detection_delay_s": 38.0
       },
       {
         "method": "MLP autoencoder",
         "tuned": "margin=0.8",
-        "f1": 0.77,
-        "false_alarm_rate": 0.39,
-        "missed_alarm_rate": 0.163,
-        "anomalies_detected": "18/18",
-        "median_detection_delay_s": 7.0
+        "f1": 0.776,
+        "false_alarm_rate": 0.409,
+        "missed_alarm_rate": 0.152,
+        "anomalies_detected": "17/17",
+        "median_detection_delay_s": 4.0
       }
     ]
   }

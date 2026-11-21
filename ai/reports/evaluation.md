@@ -2,8 +2,18 @@
 
 All numbers below are **measured** on real public datasets (Industrial Hall, Indoor Laboratory, MetroPT-3, SKAB).
 Nothing is synthetic. Rebuild with `.venv/Scripts/python -m ai.train`. Model version 1.0.0.
+Provenance and data-quality findings: [docs/DATA_PROVENANCE_AUDIT.md](../../docs/DATA_PROVENANCE_AUDIT.md).
 
-## 1. Zone model: real fire or industrial nuisance?
+## Status of each claim
+
+| Claim | Evidence | Status |
+|---|---|---|
+| 1. **Fire detection** in an industrial hall, telling fires from nuisances | Industrial Hall, leave-one-event-out + nested rule selection | **Held-out estimate** (small sample, wide intervals) |
+| 2. **Earlier than a conventional detector** | Indoor Laboratory fires, rule fixed in advance | **Held-out by construction** (no training), 7 fires; laboratory, not a factory |
+| 3. **Equipment anomaly / failure detection** | MetroPT-3 compressor (4 failures), SKAB motor bench | **Exploratory** for the compressor (model choice made after seeing the 4 failures); held-out tuning split for SKAB |
+| 4. **Prevention of industrial fires** | None | **Not demonstrated.** No dataset links detected anomalies to fires that were then avoided |
+
+## 1. Zone model: real fire or industrial nuisance? (primary MVP model)
 
 Gradient-boosted trees on features relative to each sensor node's recent background (CO, CO₂, H₂, VOC,
 particles by size, temperature, humidity). **Leave-one-event-out**: each of the 32 recordings is judged by
@@ -11,22 +21,30 @@ a model that never saw it. Welding and abrasive cutting have a single recording 
 **completely unseen** sources.
 
 Decision rule: **coincidence detection** (as in "double-knock" fire systems): the zone alarms when at least
-2 sensor nodes are confident (P(fire) ≥ 0.95) for 30 s.
+N sensor nodes are confident (P(fire) ≥ p) for 30 s. The pair (p, N) is chosen by a criterion fixed in advance
+(detect every fire, then fewest nuisance alarms, then fewest background alarms, then fastest).
 
-| Result (chosen rule) | AEROGUARD | Single particle threshold |
-|---|---|---|
-| Real fires detected | 17/17 | 17/17 |
-| Nuisances raising a fire alarm | 4/15 | 15/15 |
-| Median time from event start to alarm | 371.0 s | – |
-| Background alarms in 64.2 h of continuous recording (incl. nights): quiet periods | 1 | – |
-| Background alarms: within 70 min after an event (smoke lingering, unventilated hall) | 11 | – |
-| Background alarms: sensor warm-up (first 30 min of the recording) | 1 | – |
+**Honest estimate (nested):** for each event, (p, N) is chosen using only the *other* events, then applied to it.
 
-The particle threshold is set to half of the smallest fire peak, so it catches every fire.
+| Result | AEROGUARD, nested (headline) | AEROGUARD, rule p≥0.95, N≥2 chosen on all events (optimistic) | Single particle threshold |
+|---|---|---|---|
+| Real fires detected | 16/17 = 94% (95% CI 73%–99%) | 17/17 | 17/17 |
+| Nuisances raising a fire alarm | 4/15 = 27% (95% CI 11%–52%) | 4/15 | 15/15 |
+| Median time from event start to alarm | 397.0 s | 371.0 s | – |
 
-**How the rule was chosen** (criterion fixed before comparing): detect every fire; among those rules, fewest
-nuisance alarms; then fewest background alarms. The rule is selected on the same out-of-fold predictions it is
-reported on (two parameters only), which slightly flatters it.
+Rules selected across the nested folds: {'p>=0.95, nodes>=2': 31, 'p>=0.95, nodes>=3': 1}. The event missed in the nested estimate is the
+one for which leaving it out makes the stricter rule look best.
+
+Background (rule p≥0.95, N≥2), 64.2 h of continuous recording including nights:
+1 alarm(s) in quiet periods, 11 within 70 min after an event (smoke lingering,
+unventilated hall), 1 during sensor warm-up (first 30 min of the recording). The 70-minute
+"post-event" window was defined **after** looking at where background alarms occur, so this split is descriptive.
+
+The particle threshold is set to half of the smallest fire peak, so it catches every fire. It is a
+simplified stand-in for an optical smoke detector, not a certified device.
+
+Residual dependence: the out-of-fold probabilities of other events come from models that did see the held-out
+event, so the nested rule choice is not perfectly independent. With 32 events this is the best available split.
 
 **Remaining nuisance alarms**: ethanol, the two fog-machine "smoke" runs and welding. Welding is a single
 recording, so here the model had **never seen welding** during training. On a real site, welding recordings
@@ -54,47 +72,54 @@ All rules tested (trade-off between catching fires and ignoring nuisances):
 | 0.9 | 3 | 17 | 17 | 4 | 15 | 2 | 14 | 1 | 413.0 |
 | 0.95 | 3 | 16 | 17 | 3 | 15 | 2 | 7 | 1 | 527.5 |
 
-Per event (chosen rule):
+Per event (nested estimate; rule chosen without that event):
 
-| event | truth | fire_alarm | time_to_alarm_s |
-|---|---|---|---|
-| Abrasive_Cutting#1 | nuisance | False |  |
-| CO#1 | nuisance | False |  |
-| CO#2 | nuisance | False |  |
-| Cable#2 | fire | True | 141.0 |
-| Cable#3 | fire | True | 118.0 |
-| Cable#4 | fire | True | 240.0 |
-| Candles#1 | fire | True | 257.0 |
-| Candles#2 | fire | True | 588.0 |
-| Candles#3 | fire | True | 1013.0 |
-| Candles#4 | fire | True | 443.0 |
-| Deodorant#1 | nuisance | False |  |
-| Deodorant#2 | nuisance | False |  |
-| Deodorant#3 | nuisance | False |  |
-| Ethanol#1 | nuisance | True | 131.0 |
-| Ethanol#2 | nuisance | False |  |
-| Exhaust#1 | nuisance | False |  |
-| Exhaust#2 | nuisance | False |  |
-| Exhaust#3 | nuisance | False |  |
-| Green_Waste#1 | nuisance | False |  |
-| Lunts#1 | fire | True | 168.0 |
-| Lunts#2 | fire | True | 37.0 |
-| Lunts#3 | fire | True | 118.0 |
-| Smoke#1 | nuisance | True | 320.0 |
-| Smoke#2 | nuisance | True | 103.0 |
-| Welding#1 | nuisance | True | 165.0 |
-| Wood#1 | fire | True | 337.0 |
-| Wood#2 | fire | True | 423.0 |
-| Wood#3 | fire | True | 371.0 |
-| Wood#4 | fire | True | 815.0 |
-| Wood#5 | fire | True | 435.0 |
-| Wood#6 | fire | True | 747.0 |
-| Wood#7 | fire | True | 437.0 |
+| event | truth | fire_alarm | time_to_alarm_s | rule_p_fire | rule_min_nodes |
+|---|---|---|---|---|---|
+| Abrasive_Cutting#1 | nuisance | False |  | 0.95 | 2 |
+| CO#1 | nuisance | False |  | 0.95 | 2 |
+| CO#2 | nuisance | False |  | 0.95 | 2 |
+| Cable#2 | fire | False |  | 0.95 | 3 |
+| Cable#3 | fire | True | 118.0 | 0.95 | 2 |
+| Cable#4 | fire | True | 240.0 | 0.95 | 2 |
+| Candles#1 | fire | True | 257.0 | 0.95 | 2 |
+| Candles#2 | fire | True | 588.0 | 0.95 | 2 |
+| Candles#3 | fire | True | 1013.0 | 0.95 | 2 |
+| Candles#4 | fire | True | 443.0 | 0.95 | 2 |
+| Deodorant#1 | nuisance | False |  | 0.95 | 2 |
+| Deodorant#2 | nuisance | False |  | 0.95 | 2 |
+| Deodorant#3 | nuisance | False |  | 0.95 | 2 |
+| Ethanol#1 | nuisance | True | 131.0 | 0.95 | 2 |
+| Ethanol#2 | nuisance | False |  | 0.95 | 2 |
+| Exhaust#1 | nuisance | False |  | 0.95 | 2 |
+| Exhaust#2 | nuisance | False |  | 0.95 | 2 |
+| Exhaust#3 | nuisance | False |  | 0.95 | 2 |
+| Green_Waste#1 | nuisance | False |  | 0.95 | 2 |
+| Lunts#1 | fire | True | 168.0 | 0.95 | 2 |
+| Lunts#2 | fire | True | 37.0 | 0.95 | 2 |
+| Lunts#3 | fire | True | 118.0 | 0.95 | 2 |
+| Smoke#1 | nuisance | True | 320.0 | 0.95 | 2 |
+| Smoke#2 | nuisance | True | 103.0 | 0.95 | 2 |
+| Welding#1 | nuisance | True | 165.0 | 0.95 | 2 |
+| Wood#1 | fire | True | 337.0 | 0.95 | 2 |
+| Wood#2 | fire | True | 423.0 | 0.95 | 2 |
+| Wood#3 | fire | True | 371.0 | 0.95 | 2 |
+| Wood#4 | fire | True | 815.0 | 0.95 | 2 |
+| Wood#5 | fire | True | 435.0 | 0.95 | 2 |
+| Wood#6 | fire | True | 747.0 | 0.95 | 2 |
+| Wood#7 | fire | True | 437.0 | 0.95 | 2 |
 
 ## 2. Early warning vs the conventional smoke detector
 
-Unsupervised and **fixed before looking at results**: each recording's first 120 s define normal; a warning
-is raised when ≥ 2 gas channels exceed a robust z-score of 8.0 for 10 s.
+Unsupervised, no training: each recording's first 120 s define normal; a warning
+is raised when ≥ 2 channels exceed a robust z-score of 8.0 for 5 consecutive readings
+(5 s for the 1 Hz files, 10 s for `electrical_1` and `electrical_2`, which are sampled every 2 s).
+The threshold, channel count and noise floors were set before the per-experiment results were computed;
+the sensitivity table below shows other settings.
+
+Headline: warned before the conventional detector in 6/7 = 86% (95% CI 49%–97%);
+electrical fires: [5.1, 8.1, 3.8, 11.9] minutes earlier. "Stage 0" (authors' no-fire label) is short in most
+recordings, so the false-warning check covers little time; it is not a false-alarm rate.
 
 | experiment | source | detector_min | aeroguard_min | lead_min | warned_before_detector | false_warning_in_stage0 | first_channel |
 |---|---|---|---|---|---|---|---|
@@ -150,20 +175,24 @@ reported failure counts as an early warning.
 | Isolation Forest | 3 | 2020-06-05 10:00:00 | True | 2020-06-06 04:00:00 | -18.0 |
 | Isolation Forest | 4 | 2020-07-15 14:30:00 | True | 2020-07-15 15:00:00 | -0.5 |
 
-Reading: the autoencoder detects all 4 failures and warns 36 h and 47.5 h ahead for two of them, at the cost of
-about one false alarm per week. The 47.5 h warning is at the edge of the 48 h window and may partly be chance.
-Isolation Forest raises fewer false alarms but only detects failures after they start.
+Reading (**exploratory**): the autoencoder detects 4/4 failures and alarms before the reported start for
+2 of them, at about 0.97 false alarm episodes per week of normal operation. The 47.5 h
+warning is at the edge of the 48 h window and may be a coincidental alarm. Isolation Forest raises fewer false alarms
+but alarms only after failures start. Both models are shown because the choice between them was made after seeing
+the 4 failures. This is a railway compressor, used here as evidence for the method, not as factory data.
 
-## 4. Motor / pump anomalies (SKAB)
+## 4. Motor / pump anomalies (SKAB, laboratory bench)
 
-First 400 samples of each experiment = normal reference (SKAB convention). Thresholds tuned on the 16
-`valve1` experiments, results on the 18 others.
+First 400 samples of each experiment = normal reference (SKAB convention). Experiments whose first 400 samples
+already contain labelled anomalies are excluded (`other/2`). Thresholds tuned on the `valve1` experiments,
+results on the others. F1 is point-wise; about 35 % of test points are anomalous, which favours permissive
+methods, so the false-alarm rate is shown next to it.
 
 | method | tuned | f1 | false_alarm_rate | missed_alarm_rate | anomalies_detected | median_detection_delay_s |
 |---|---|---|---|---|---|---|
-| Fixed k-sigma limits | k=2.5 | 0.772 | 0.461 | 0.122 | 17/18 | 3.0 |
-| PCA residual (Q statistic) | margin=0.8 | 0.66 | 0.238 | 0.407 | 18/18 | 42.0 |
-| MLP autoencoder | margin=0.8 | 0.77 | 0.39 | 0.163 | 18/18 | 7.0 |
+| Fixed k-sigma limits | k=2.5 | 0.782 | 0.466 | 0.11 | 16/17 | 3.0 |
+| PCA residual (Q statistic) | margin=0.8 | 0.669 | 0.224 | 0.404 | 17/17 | 38.0 |
+| MLP autoencoder | margin=0.8 | 0.776 | 0.409 | 0.152 | 17/17 | 4.0 |
 
 Reading: on this bench the autoencoder matches the classic k-sigma limits on F1 while detecting every anomaly and
 raising fewer false alarms. The gain is modest; it is reported as such.

@@ -1,0 +1,224 @@
+{
+  "integrity": {
+    "industrial_hall_fire": [
+      {
+        "file": "industrial_hall.csv",
+        "matches_publisher_sha256": true,
+        "publisher_hash_available": true
+      }
+    ],
+    "indoor_lab_fire": [
+      {
+        "file": "carton_1.csv",
+        "matches_publisher_sha256": true,
+        "publisher_hash_available": true
+      },
+      {
+        "file": "carton_2.csv",
+        "matches_publisher_sha256": true,
+        "publisher_hash_available": true
+      },
+      {
+        "file": "clothing_1.csv",
+        "matches_publisher_sha256": true,
+        "publisher_hash_available": true
+      },
+      {
+        "file": "clothing_2.csv",
+        "matches_publisher_sha256": true,
+        "publisher_hash_available": true
+      },
+      {
+        "file": "electrical_1.csv",
+        "matches_publisher_sha256": true,
+        "publisher_hash_available": true
+      },
+      {
+        "file": "electrical_2.csv",
+        "matches_publisher_sha256": true,
+        "publisher_hash_available": true
+      },
+      {
+        "file": "electrical_3.csv",
+        "matches_publisher_sha256": true,
+        "publisher_hash_available": true
+      },
+      {
+        "file": "electrical_4.csv",
+        "matches_publisher_sha256": true,
+        "publisher_hash_available": true
+      }
+    ],
+    "test_chamber_fire": [
+      {
+        "file": "test_chamber.csv",
+        "matches_publisher_sha256": true,
+        "publisher_hash_available": true
+      }
+    ],
+    "skab": [
+      {
+        "file": "skab.zip",
+        "matches_publisher_sha256": null,
+        "publisher_hash_available": false
+      }
+    ],
+    "metropt3": [
+      {
+        "file": "metropt3.zip",
+        "matches_publisher_sha256": null,
+        "publisher_hash_available": false
+      }
+    ],
+    "motor_thermal": [
+      {
+        "file": "IR-Motor-bmp.rar",
+        "matches_publisher_sha256": true,
+        "publisher_hash_available": true
+      },
+      {
+        "file": "40_GT_with_Refrences.rar",
+        "matches_publisher_sha256": true,
+        "publisher_hash_available": true
+      },
+      {
+        "file": "Readme_InductionMotor.pdf",
+        "matches_publisher_sha256": true,
+        "publisher_hash_available": true
+      }
+    ],
+    "aria": [
+      {
+        "file": "aria.xlsx",
+        "matches_publisher_sha256": null,
+        "publisher_hash_available": false
+      }
+    ]
+  },
+  "industrial_hall_fire": {
+    "rows": 248502,
+    "nodes": 9,
+    "start": "2023-07-10 07:30:27+00:00",
+    "end": "2023-07-13 12:43:12+00:00",
+    "duplicate_rows": 0,
+    "duplicate_node_timestamp": 0,
+    "sampling_per_node_median_s": [
+      10.0
+    ],
+    "max_gap_s_any_node": 1000.0,
+    "missing_values": {},
+    "negative_values": {},
+    "valid_flag_false_rows": 0,
+    "event_rows_with_scenario_but_no_experiment": 0,
+    "label_consistency": {
+      "fire_rows_in_nuisance_scenarios": 0,
+      "anomaly_rows_in_background": 639,
+      "single_row_events": {
+        "Cable#0.0": 1
+      }
+    },
+    "co_ppm_range": [
+      0.0,
+      216.81
+    ],
+    "temperature_c_range": [
+      20.4,
+      35.2
+    ]
+  },
+  "indoor_lab_fire": {
+    "rows": 11797,
+    "experiments": 8,
+    "sampling_median_s": {
+      "carton_1": 1.0,
+      "carton_2": 1.0,
+      "clothing_1": 1.0,
+      "clothing_2": 1.0,
+      "electrical_1": 2.0,
+      "electrical_2": 2.0,
+      "electrical_3": 1.0,
+      "electrical_4": 1.0
+    },
+    "max_gap_s": {
+      "carton_1": 1.0,
+      "carton_2": 2.0,
+      "clothing_1": 1.0,
+      "clothing_2": 2.0,
+      "electrical_1": 2.0,
+      "electrical_2": 2.0,
+      "electrical_3": 2.0,
+      "electrical_4": 1.0
+    },
+    "duplicate_rows": 0,
+    "missing_values": {},
+    "note": "timestamps are relative per experiment (no absolute date)"
+  },
+  "test_chamber_fire": {
+    "rows": 2900,
+    "intensity_range": [
+      1,
+      4
+    ],
+    "scenarios": [
+      "CO",
+      "Cable",
+      "Candles",
+      "H2",
+      "HeptanFlame",
+      "Lunts",
+      "PU",
+      "Ventilation",
+      "Wood"
+    ],
+    "negative_co_ppm_rows": 291
+  },
+  "skab": {
+    "experiments": 35,
+    "sampling_median_s": [
+      1.0
+    ],
+    "anomaly_share_in_labelled": 0.349,
+    "anomaly_in_first_400_rows": {
+      "other/2": 296
+    },
+    "duplicate_timestamps": {},
+    "missing_values_total": 0
+  },
+  "metropt3": {
+    "rows": 1516948,
+    "start": "2020-02-01 00:00:00",
+    "end": "2020-09-01 03:59:50",
+    "timestamps_monotonic": true,
+    "duplicate_timestamps": 0,
+    "sampling_median_s": 10.0,
+    "gaps_over_1h": 160,
+    "longest_gap_h": 48.0,
+    "note_on_rate": "the UCI page says 1 Hz; the published CSV is sampled about every 10 s",
+    "failures_reported": 4,
+    "data_after_last_failure_days": 47.4,
+    "missing_values": {}
+  },
+  "motor_thermal": {
+    "images": 369,
+    "classes": 11,
+    "shapes_sampled": [
+      "(240, 320, 3)"
+    ],
+    "note": "8-bit pseudo-colour BMP renderings; no radiometric temperature values"
+  },
+  "aria": {
+    "rows": 53958,
+    "fires": 25687,
+    "duplicate_aria_ids": 1,
+    "date_range": [
+      "1794-08-31",
+      "2020-05-29"
+    ],
+    "fires_with_primary_cause": 8333,
+    "countries_top": {
+      "FRANCE": 47481,
+      "ETATS-UNIS": 1656,
+      "ALLEMAGNE": 660
+    }
+  }
+}

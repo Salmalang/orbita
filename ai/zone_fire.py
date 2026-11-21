@@ -157,6 +157,36 @@ def evaluate_rule(oof: pd.DataFrame, p_fire: float, min_nodes: int) -> tuple[pd.
     return res, s
 
 
+def select_rule(per_rule: dict, exclude: str | None = None) -> tuple:
+    """Criterion fixed in advance: detect every fire; then fewest nuisance alarms; then fewest
+    background alarms (quiet + post-event); then fastest median alarm. `exclude` leaves one event out."""
+    def key(rule):
+        ev, s = per_rule[rule]
+        ev = ev[ev["event"] != exclude]
+        fires, nuis = ev[ev["truth"] == "fire"], ev[ev["truth"] == "nuisance"]
+        missed = int((~fires["fire_alarm"]).sum())
+        return (missed, int(nuis["fire_alarm"].sum()), s["bg_alarms_quiet"] + s["bg_alarms_post_event"],
+                float(fires["time_to_alarm_s"].median()))
+    return min(per_rule, key=key)
+
+
+def nested_rule_evaluation(oof: pd.DataFrame, rules: list[tuple]) -> tuple[pd.DataFrame, dict]:
+    """Honest estimate: for each event, choose the rule using only the OTHER events, then apply it
+    to that event. Removes the optimism of picking the rule on the reported results."""
+    per_rule = {r: evaluate_rule(oof, *r) for r in rules}
+    events = per_rule[rules[0]][0]["event"].tolist()
+    rows = []
+    for ev in events:
+        rule = select_rule(per_rule, exclude=ev)
+        row = per_rule[rule][0].set_index("event").loc[ev].to_dict()
+        rows.append({"event": ev, **row, "rule_p_fire": rule[0], "rule_min_nodes": rule[1]})
+    res = pd.DataFrame(rows)
+    chosen_counts = res.groupby(["rule_p_fire", "rule_min_nodes"]).size().to_dict()
+    s = summarize(res)
+    s["rules_selected"] = {f"p>={p}, nodes>={n}": int(c) for (p, n), c in chosen_counts.items()}
+    return res, s
+
+
 # ---------------------------------------------------------------- conventional baseline
 
 def particle_threshold_baseline(t: pd.DataFrame, threshold: float) -> pd.DataFrame:

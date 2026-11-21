@@ -77,9 +77,14 @@ class Autoencoder:
         return np.quantile(self.score(X), QUANTILE) * self.margin
 
 
+def clean_reference(e) -> bool:
+    """SKAB assumes the first N_TRAIN samples are normal; experiment other/2 violates this."""
+    return int(e.data["anomaly"].iloc[:N_TRAIN].sum()) == 0
+
+
 def run(experiments, make) -> dict:
     y_true, y_pred, delays = [], [], []
-    for e in experiments:
+    for e in [x for x in experiments if clean_reference(x)]:
         X = e.data[SKAB_FEATURES].to_numpy(float)
         y = e.data["anomaly"].to_numpy(int)
         tr, te, yte = X[:N_TRAIN], X[N_TRAIN:], y[N_TRAIN:]
