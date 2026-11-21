@@ -1,0 +1,33 @@
+{
+  "id": "HALL-A",
+  "name": "Production Hall A",
+  "site": "Metal-working plant (illustrative demo site)",
+  "illustrative": true,
+  "illustrative_note": "Layout, node positions, exits and contacts are illustrative. The sensor measurements are real recordings from the Industrial Hall dataset (doi:10.17632/yghykzm4km.1), a 10 x 22 x 8 m hall used for controlled fire and nuisance experiments in July 2023.",
+  "dimensions_m": {"length": 22, "width": 10, "height": 8},
+  "criticality": 4,
+  "activities": ["Welding (hot work)", "Abrasive cutting", "Assembly", "Forklift traffic"],
+  "nodes": [
+    {"id": "sensornode0006", "label": "N6", "x": 3.5,  "y": 2.0},
+    {"id": "sensornode0007", "label": "N7", "x": 11.0, "y": 2.0},
+    {"id": "sensornode0008", "label": "N8", "x": 18.5, "y": 2.0},
+    {"id": "sensornode0009", "label": "N9", "x": 3.5,  "y": 5.0},
+    {"id": "sensornode0010", "label": "N10", "x": 11.0, "y": 5.0},
+    {"id": "sensornode0011", "label": "N11", "x": 18.5, "y": 5.0},
+    {"id": "sensornode0012", "label": "N12", "x": 3.5,  "y": 8.0},
+    {"id": "sensornode0013", "label": "N13", "x": 11.0, "y": 8.0},
+    {"id": "sensornode0015", "label": "N15", "x": 18.5, "y": 8.0}
+  ],
+  "exits": [
+    {"id": "EXIT-W", "label": "West door", "x": 0, "y": 5},
+    {"id": "EXIT-E", "label": "East loading door", "x": 22, "y": 5}
+  ],
+  "drone_dock": {"label": "Drone dock (simulated)", "x": 1.0, "y": 9.0},
+  "hazardous_materials": [],
+  "hazardous_materials_note": "Not configured for this demo site. A real deployment imports the site's hazardous-materials register.",
+  "emergency_contacts": [
+    {"name": "Protection Civile (Tunisia)", "phone": "198"},
+    {"name": "SAMU (Tunisia)", "phone": "190"},
+    {"name": "Site HSE manager", "phone": "not configured"}
+  ]
+}

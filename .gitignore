@@ -26,7 +26,7 @@ docs/cahier_des_charges.pdf
 
 
 # Real datasets (downloaded by ingest/, never committed)
-data/
+/data/
 
 # Trained model binaries (rebuilt by python -m ai.train); cards are committed
 ai/registry/**/model.joblib
