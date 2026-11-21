@@ -1,0 +1,50 @@
+{
+  "name": "motor",
+  "version": "1.0.0",
+  "description": "Per-asset motor/pump anomaly detection (autoencoder).",
+  "created_at": "2026-11-21T15:36:31+00:00",
+  "model_sha256": "e49f405f4030b7aead1b728eb515683aa53ef078489dcc1a2276069d25d2a770",
+  "training_data": {
+    "skab": {
+      "skab.zip": "5afa5de6cdb053084231f4bef896f921ed181d565af0c01dbe36bfe64191526c"
+    }
+  },
+  "training_data_sha256": "8593014e059b64c384dd74d3ecbdbfe9ed52410f04d2242f0ec568257fb31757",
+  "config": {
+    "train_samples": 400,
+    "quantile": 0.99,
+    "confirm_samples": 3,
+    "tuning": "threshold tuned on valve1, tested on valve2 + other"
+  },
+  "metrics": {
+    "comparison": [
+      {
+        "method": "Fixed k-sigma limits",
+        "tuned": "k=2.5",
+        "f1": 0.772,
+        "false_alarm_rate": 0.461,
+        "missed_alarm_rate": 0.122,
+        "anomalies_detected": "17/18",
+        "median_detection_delay_s": 3.0
+      },
+      {
+        "method": "PCA residual (Q statistic)",
+        "tuned": "margin=0.8",
+        "f1": 0.66,
+        "false_alarm_rate": 0.238,
+        "missed_alarm_rate": 0.407,
+        "anomalies_detected": "18/18",
+        "median_detection_delay_s": 42.0
+      },
+      {
+        "method": "MLP autoencoder",
+        "tuned": "margin=0.8",
+        "f1": 0.77,
+        "false_alarm_rate": 0.39,
+        "missed_alarm_rate": 0.163,
+        "anomalies_detected": "18/18",
+        "median_detection_delay_s": 7.0
+      }
+    ]
+  }
+}

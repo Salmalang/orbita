@@ -11,10 +11,10 @@ Status: ⬜ todo · 🟡 in progress · ✅ done · ➖ not applicable / team ta
 | # | Requirement | How AEROGUARD TRUST answers | Status |
 |---|---|---|---|
 | P1 | Aeronautical technology plays a real role | Inspection drone (UAS) + aviation methods: MEL, independent inspection (EASA Part-145), black box, ATC-style dispatch | ⬜ |
-| P2 | Prevention | Anomaly detection before thresholds, safety cases, MEL | ⬜ |
-| P3 | Detection | AI + drone thermal confirmation | ⬜ |
+| P2 | Prevention | Anomaly detection before thresholds (compressor, motor), safety cases, MEL | 🟡 |
+| P3 | Detection | Zone fire model + early warning (measured lead time); drone thermal check to come | 🟡 |
 | P4 | Management / intervention | Fire Pack for the Protection Civile, black box | ⬜ |
-| P5 | Based on AI models | Autoencoder + Isolation Forest, evaluated (`ai/`) | ⬜ |
+| P5 | Based on AI models | 4 models evaluated on real data, see ai/reports/evaluation.md | ✅ |
 | P6 | Economically viable | Cost estimate + BMC (team deliverable) | ⬜ |
 
 ## Main goals (§01 "Buts principaux")
@@ -22,7 +22,7 @@ Status: ⬜ todo · 🟡 in progress · ✅ done · ➖ not applicable / team ta
 |---|---|---|---|
 | G1 | Entrepreneurial study | BMC, team report, empathy map (team) | ⬜ |
 | G2 | Model of the proposed solution | Architecture + simulation + dashboard + video | ⬜ |
-| G3 | Prototype of an AI model | `ai/` + `docs/MODEL_REPORT.md` | ⬜ |
+| G3 | Prototype of an AI model | `ai/` done and evaluated; `docs/MODEL_REPORT.md` in Part 9 | 🟡 |
 
 ## Requirements and constraints (§03)
 | # | Requirement | How we meet it | Status |

@@ -1,0 +1,42 @@
+{
+  "name": "compressor",
+  "version": "1.0.0",
+  "description": "Unsupervised compressor monitoring with physics residual; evaluated on 4 real failures.",
+  "created_at": "2026-11-21T15:35:38+00:00",
+  "model_sha256": "f476b4e0bb7bf6f849d84a4bb402f6280c17bb4806e1b713509cc0a5ec794102",
+  "training_data": {
+    "metropt3": {
+      "metropt3.zip": "aab991a970e58210de853bb8078ce0e63abb4d9412fdc5c79792dae3d8e1721a"
+    }
+  },
+  "training_data_sha256": "9aa9a0ae6c6f60abeb62021759cb545cc7d0a53b1a4183c25b08c34abdafdd21",
+  "config": {
+    "window": "30min",
+    "train_end": "2020-04-01",
+    "quantile": 0.995,
+    "confirm_windows": 2,
+    "lookback_h": 48.0
+  },
+  "metrics": {
+    "Autoencoder": {
+      "failures": 4,
+      "detected": 4,
+      "detected_before_start": 2,
+      "median_lead_time_h": 18.0,
+      "false_alarm_episodes": 15,
+      "normal_weeks_evaluated": 15.4,
+      "false_alarms_per_week": 0.97,
+      "threshold": 0.7938177010694301
+    },
+    "Isolation Forest": {
+      "failures": 4,
+      "detected": 3,
+      "detected_before_start": 0,
+      "median_lead_time_h": -17.5,
+      "false_alarm_episodes": 3,
+      "normal_weeks_evaluated": 15.4,
+      "false_alarms_per_week": 0.19,
+      "threshold": 0.7141328521602761
+    }
+  }
+}

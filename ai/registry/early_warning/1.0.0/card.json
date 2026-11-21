@@ -1,0 +1,52 @@
+{
+  "name": "early_warning",
+  "version": "1.0.0",
+  "description": "Unsupervised multi-gas early warning, fixed rule, vs conventional detector.",
+  "created_at": "2026-11-21T15:35:33+00:00",
+  "model_sha256": "6dc00f83085a3c6f6e0ed2bec295c4ec264d184f3d2d7ca6718b5604fa18cf69",
+  "training_data": {
+    "indoor_lab_fire": {
+      "carton_1.csv": "3e298c5c795926c6780dc264ad8612544d90d85475e40f5403432a12b4e08c7b",
+      "carton_2.csv": "2e2126094dec720bf6dcc47273627b2a29805d9ab2b1d14914ea703f5fab5b87",
+      "clothing_1.csv": "b1e6251f43f319c2d59b87aa8abeb5270a7daee2d4105981fa1564e6634507a9",
+      "clothing_2.csv": "d0212c9e67c17854dda54d9d2a75304add614a3b79bc6bc9462b981ef0751533",
+      "electrical_1.csv": "fbcd0f53ad28914135f268db5f5225c115f57fc3e42055f8b0ac79a78afb57ce",
+      "electrical_2.csv": "622bf5fadcbc93face503cbf6cc41d4ef164a8691e755ab59d5debb88635cc8c",
+      "electrical_3.csv": "e12763154893a6f429fe9e78d41d8d9d45324eecf4970dec6b167e4b716759aa",
+      "electrical_4.csv": "c3547b6693c3b8fe56fc5e69ca540bc2e81e244d90a7a1d43fe8bd9d1566780d"
+    }
+  },
+  "training_data_sha256": "52ceb594c324a342082402023635414db0b420827e93f63e7dda45cb2916bada",
+  "config": {
+    "channels": [
+      "tvoc_ppb",
+      "eco2_ppm",
+      "mq139_raw",
+      "temperature_c",
+      "humidity_pct"
+    ],
+    "floors": {
+      "tvoc_ppb": 10.0,
+      "eco2_ppm": 20.0,
+      "mq139_raw": 3.0,
+      "temperature_c": 0.3,
+      "humidity_pct": 1.0
+    },
+    "calibration_s": 120,
+    "z_threshold": 8.0,
+    "min_channels": 2,
+    "confirm_samples": 5
+  },
+  "metrics": {
+    "experiments_scored": 7,
+    "warned_before_detector": 6,
+    "electrical_lead_time_min": [
+      5.1,
+      8.1,
+      3.8,
+      11.9
+    ],
+    "median_lead_time_min_all": 4.8,
+    "false_warnings_stage0": 0
+  }
+}
