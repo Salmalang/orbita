@@ -37,7 +37,7 @@
       "status": "done",
       "progress": 100,
       "checks": [
-        "Zone model: 16/17 fires (nested held-out), 4/15 nuisances",
+        "Zone model: 16/17 fires, 4/15 nuisances (held-out); no advantage over a calibrated particle rule except earlier alarms (14/16, median 195 s)",
         "Early warning: electrical fires 3.8-11.9 min before detector",
         "Compressor (exploratory): 4/4 real failures",
         "Motor bench: F1 0.776",
@@ -129,12 +129,13 @@
       "name": "End-to-end test, model report, docs",
       "weight": 10,
       "status": "in_progress",
-      "progress": 30,
+      "progress": 60,
       "checks": [
-        "Automated browser run of the demo",
-        "MODEL_REPORT.md",
-        "README run guide",
-        "Requirements re-check"
+        "MODEL_REPORT.md + PDF (rendered and inspected)",
+        "Held-value audit + stabilization regression tests",
+        "Nested calibrated baseline (bug fixed)",
+        "README run guide + dependency lock",
+        "Automated browser test: not yet"
       ]
     }
   ]

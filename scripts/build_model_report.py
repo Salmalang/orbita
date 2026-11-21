@@ -169,7 +169,7 @@ def stabilization_audit() -> dict:
 
 def fig_confusion(z, m) -> None:
     fig, axes = plt.subplots(1, 3, figsize=(10, 3.2))
-    for ax, key, title in zip(axes, ["nested", "baseline", None], ["AEROGUARD zone model\n(held-out events, nested rule)", "Single particle threshold\n(stand-in for a smoke detector)", None]):
+    for ax, key, title in zip(axes, ["nested", "baseline", None], ["AEROGUARD zone model\n(held-out events, nested rule)", "Calibrated particle threshold\n(held-out events, nested threshold)", None]):
         if key is None:
             continue
         c = z["cm"][key]
@@ -275,7 +275,7 @@ Second line of evidence: on laboratory fires, an unsupervised multi-gas rule war
 
 - **Problem.** In metal-working plants, hot work (welding, grinding, abrasive cutting) produces smoke, particles and gases that conventional detectors confuse with fire. Frequent nuisance alarms lead operators to ignore or disable detection, while equipment failures are the largest category of fire causes in industrial accident records (ARIA database, France: 43 % of fires with a known primary cause list "equipment failure" first; see `docs/DATASETS.md`).
 - **Sector.** Discrete manufacturing, metal-working production halls (automotive components, fabrication). See `docs/INDUSTRY_SELECTION.md` for the comparison of candidate use cases.
-- **Use case.** Zone-level early fire detection that does not raise fire alarms for routine hot work, followed by a verified response. Certified fire alarms and emergency shutdown systems remain independent of AEROGUARD.
+- **Use case.** Zone-level early fire warning in halls where routine hot work produces smoke and gases, followed by a verified response. Fewer nuisance alarms than a simple rule was the original goal; Section 8 shows it is not achieved on this data, while earlier warning is. Certified fire alarms and emergency shutdown systems remain independent of AEROGUARD.
 - **Why not "automotive machine monitoring"?** No authentic factory machine dataset was available. The monitored object is therefore the **hall zone**, which the available data supports.
 
 ## 3. Data sources and provenance

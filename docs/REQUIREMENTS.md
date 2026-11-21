@@ -22,7 +22,7 @@ Status: ⬜ todo · 🟡 in progress · ✅ done · ➖ not applicable / team ta
 |---|---|---|---|
 | G1 | Entrepreneurial study | BMC, team report, empathy map (team) | ⬜ |
 | G2 | Model of the proposed solution | Architecture + simulation + dashboard + video | ⬜ |
-| G3 | Prototype of an AI model | `ai/` done and evaluated; `docs/MODEL_REPORT.md` in Part 9 | 🟡 |
+| G3 | Prototype of an AI model | `ai/` evaluated on held-out events; `docs/MODEL_REPORT.md` | ✅ |
 
 ## Requirements and constraints (§03)
 | # | Requirement | How we meet it | Status |
@@ -42,8 +42,8 @@ Status: ⬜ todo · 🟡 in progress · ✅ done · ➖ not applicable / team ta
 | D3 | Empathy map | 10 | Team | ⬜ |
 | D4 | Realism, precision and safety of the modelled solution | 10 | Repo + docs | ⬜ |
 | D5 | Explanatory video (1 min) | 20 | Team (screen recording of the demo) | ⬜ |
-| D6 | AI model report: architecture, why this model, dataset description | 30 (with D7) | `docs/MODEL_REPORT.md` | ⬜ |
-| D7 | GitHub repo link, **must be public** | (with D6) | Team creates repo on github.com | ⬜ |
+| D6 | AI model report: architecture, why this model, dataset description | 30 (with D7) | `docs/MODEL_REPORT.md` + `.pdf` | ✅ |
+| D7 | GitHub repo link, **must be public** | (with D6) | Repo audited and ready; not yet pushed or public (needs team approval) | 🟡 |
 | D8 | Presentation in PDF format | — | Team | ⬜ |
 | D9 | Summary file in the Google Drive folder presenting all elements and results | — | Team | ⬜ |
 

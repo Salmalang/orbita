@@ -339,6 +339,15 @@ for mount, folder in (("/figures", ROOT / "docs" / "figures"), ("/reports", ROOT
 app.mount("/", StaticFiles(directory=ROOT / "dashboard", html=True), name="ui")
 
 
+@app.middleware("http")
+async def no_stale_ui(request, call_next):
+    """Browsers must revalidate UI files so a demo never runs an outdated interface."""
+    response = await call_next(request)
+    if not request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 @app.exception_handler(Exception)
 def unhandled(_, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": f"{type(exc).__name__}: {exc}"})

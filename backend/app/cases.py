@@ -159,7 +159,11 @@ class CaseManager:
                   "note": None if ok else ("No measured data after the corrective action yet: resume the replay. "
                                            "If the recording has ended, the case stays open awaiting stabilization; "
                                            "it is never closed on simulated or held data." if measured_after == 0 else
-                                           "Not enough consecutive normal readings yet: continue the replay and check again.")}
+                                           f"Not enough consecutive live normal readings ({round(good * 10 / 60, 1)} of "
+                                           f"{STABILIZATION_MIN} min). {held_after} of the {len(after)} readings after the "
+                                           "action were missing or held/repeated values and do not count. If the replay "
+                                           "is still running, check again later; if the recording has ended, the case "
+                                           "stays open awaiting stabilization.")}
         c["stabilization"] = result
         if ok:
             c["status"] = "CLOSED"
