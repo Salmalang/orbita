@@ -41,14 +41,14 @@ class CaseManager:
     # ---------------------------------------------------------------- opening
     def open_case(self, *, zone: str, event_id: str, data_ts: str, decision: dict, snapshot: dict) -> dict:
         case = {
-            "id": f"SC-{next(self._ids):04d}", "zone": zone, "replay_event": event_id,
+            "id": f"SC-{next(self._ids):04d}", "kind": "SENSOR_ALERT", "zone": zone, "replay_event": event_id,
             "status": "OPEN", "severity": decision["level"], "opened_wall_ts": _now(), "opened_data_ts": data_ts,
             "findings": decision["reasons"], "fire_nodes": decision["fire_nodes"],
             "evidence": snapshot, "recommended_inspection": (
                 "Inspect the zone around the flagged sensor nodes for smouldering material, overheated cables and "
                 "electrical cabinets. Do not approach visible flames: follow the site emergency procedure."),
             "technician": None, "action": None, "verifier": None, "verification": None,
-            "stabilization": None, "drone": None, "escalations": 0,
+            "stabilization": None, "drone": None, "escalations": 0, "missions": [],
             "hedera": {"status": "pending", "note": "Anchoring on Hedera is not implemented yet"},
         }
         self.store.save_case(case)
@@ -56,14 +56,68 @@ class CaseManager:
                           data_ts=data_ts, case_id=case["id"])
         return case
 
+    def open_finding_case(self, *, zone: str, finding: dict, opened_by: str) -> dict:
+        """Safety Case from a preventive-inspection finding. The evidence is SIMULATED (illustrative finding)."""
+        sev = {"LOW": "WATCH", "MEDIUM": "HIGH", "HIGH": "CRITICAL"}[finding["severity"]]
+        case = {
+            "id": f"SC-{next(self._ids):04d}", "kind": "INSPECTION_FINDING", "zone": zone, "replay_event": None,
+            "status": "OPEN", "severity": sev, "opened_wall_ts": _now(), "opened_data_ts": None,
+            "findings": [f"{finding['type_label']} at {finding['checkpoint_label']} ({finding['severity']})",
+                         f"Operator note: {finding['note'] or '-'}",
+                         "Illustrative finding from a SIMULATED drone mission; not detected by an AI model."],
+            "fire_nodes": [], "evidence": {"finding": finding, "simulated": True},
+            "source_finding": finding["id"], "checkpoint": finding["checkpoint"],
+            "recommended_inspection": f"Correct the condition at {finding['checkpoint_label']}, then request a follow-up drone "
+                                      "inspection of that checkpoint to confirm it is clear.",
+            "technician": None, "action": None, "verifier": None, "verification": None,
+            "stabilization": None, "drone": None, "escalations": 0, "missions": [finding["mission_id"]],
+            "hedera": {"status": "pending", "note": "Anchoring on Hedera is not implemented yet"},
+        }
+        self.store.save_case(case)
+        self.store.append("case_opened", "human", {"severity": sev, "from_finding": finding["id"], "illustrative": True,
+                                                    "findings": case["findings"]}, actor=opened_by, case_id=case["id"])
+        return case
+
+    def attach_mission(self, case_id: str, mission_id: str) -> None:
+        c = self.get(case_id)
+        if mission_id not in c.setdefault("missions", []):
+            c["missions"].append(mission_id)
+            self.store.save_case(c)
+
+    def inspection_closure_check(self, case_id: str, missions: list[dict]) -> dict:
+        """INSPECTION_FINDING cases close when a FOLLOW_UP mission, started AFTER the corrective action, inspected the
+        same checkpoint and the operator marked it clear. Simulated evidence, labelled as such."""
+        c = self.get(case_id)
+        if c["status"] != "VERIFIED":
+            raise WorkflowError(f"the closure check runs after independent verification (status {c['status']})")
+        after = c["action"]["wall_ts"]
+        ok_m = [m for m in missions if m["id"] in c.get("missions", []) and m["mode"] == "FOLLOW_UP"
+                and m["status"] == "COMPLETED" and (m["started_at"] or "") >= after
+                and any(cp["id"] == c["checkpoint"] and cp["result"] == "clear" for cp in m["checkpoints"])]
+        result = {"passed": bool(ok_m), "kind": "follow_up_inspection", "simulated": True,
+                  "criterion": "A follow-up drone inspection of the same checkpoint, flown after the corrective action, "
+                               "confirms the condition is cleared (SIMULATED mission; operator-recorded result).",
+                  "evidence_mission": ok_m[0]["id"] if ok_m else None, "wall_ts": _now(),
+                  "note": None if ok_m else "No completed follow-up inspection marked clear after the corrective action yet."}
+        c["stabilization"] = result
+        if ok_m:
+            c["status"], c["closed_wall_ts"] = "CLOSED", _now()
+        self.store.save_case(c)
+        self.store.append("closure_check", "system", result, case_id=case_id)
+        if ok_m:
+            self.store.append("case_closed", "system", {"signatures": ["technician", "independent_verifier",
+                                                                      "follow-up inspection (simulated)"]}, case_id=case_id)
+        return c
+
     def get(self, case_id: str) -> dict:
         c = self.store.get_case(case_id)
         if not c:
             raise KeyError(case_id)
         return c
 
-    def open_cases(self, zone: str | None = None) -> list[dict]:
-        return [c for c in self.store.cases() if c["status"] != "CLOSED" and (zone is None or c["zone"] == zone)]
+    def open_cases(self, zone: str | None = None, kind: str | None = None) -> list[dict]:
+        return [c for c in self.store.cases() if c["status"] != "CLOSED" and (zone is None or c["zone"] == zone)
+                and (kind is None or c.get("kind", "SENSOR_ALERT") == kind)]
 
     def escalate(self, case_id: str, data_ts: str, decision: dict) -> None:
         c = self.get(case_id)
@@ -132,6 +186,8 @@ class CaseManager:
         """Count minutes of MEASURED readings after the corrective action in which every reporting node
         has P(fire) < STABLE_P_FIRE and the zone is NORMAL. Gaps (no fresh data) do not count."""
         c = self.get(case_id)
+        if c.get("kind") == "INSPECTION_FINDING":
+            raise WorkflowError("inspection-finding cases close with a follow-up inspection, not a sensor stabilization check")
         if c["status"] != "VERIFIED":
             raise WorkflowError(f"stabilization is checked after independent verification (status {c['status']})")
         since = pd.Timestamp(c["action"]["data_ts"])

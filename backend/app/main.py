@@ -19,6 +19,7 @@ from ai import registry
 from backend.app.cases import CaseManager, WorkflowError
 from backend.app.replay import SPEEDS, HallData, ReplayEngine
 from backend.app.store import DEFAULT_DB, Store
+from drone.missions import FINDING_TYPES, SEVERITIES, MissionError, MissionManager
 
 ROOT = Path(__file__).resolve().parents[2]
 FACILITY = json.loads((Path(__file__).parent / "data" / "facility.json").read_text(encoding="utf-8"))
@@ -32,9 +33,11 @@ app = FastAPI(title="AEROGUARD TRUST", version="0.3.0",
 class Runtime:
     """Holds the singletons. Built lazily so tests can inject a temporary database."""
 
-    def __init__(self, db_path=None):
+    def __init__(self, db_path=None, simulate_drone: bool = True):
         self.store = Store(db_path or os.environ.get("AEROGUARD_DB", DEFAULT_DB))
         self.cases = CaseManager(self.store)
+        self.simulate_drone = simulate_drone
+        self.drone = MissionManager(self.store, FACILITY, autostart=simulate_drone)
         self.data = HallData()
         self.engine = ReplayEngine(self.data, on_tick=self.on_tick)
         self._last_level = "NORMAL"
@@ -59,10 +62,15 @@ class Runtime:
             self.store.append("alert", "risk", {"level": level, "reasons": decision.reasons,
                                                 "replay_event": engine.state.event_id}, data_ts=rec["t"])
         if level == "CRITICAL":
-            open_ = self.cases.open_cases(ZONE)
+            open_ = self.cases.open_cases(ZONE, kind="SENSOR_ALERT")
             if not open_:
                 case = self.cases.open_case(zone=ZONE, event_id=engine.state.event_id, data_ts=rec["t"],
                                             decision=decision.__dict__, snapshot=evidence)
+                # MODE B: request a targeted inspection of the flagged area; it waits for operator approval
+                cps = self.drone.checkpoints_for_nodes(decision.fire_nodes)
+                m = self.drone.create_mission("TARGETED", origin="ALERT", checkpoints=cps, case_id=case["id"],
+                                              reason=f"Sensor alert: {decision.reasons[0]}")
+                self.cases.attach_mission(case["id"], m["id"])
                 if self.auto_pause:
                     engine.pause()   # the operator stops the replay to respond, as in a real control room
                     self.store.append("replay_auto_paused", "system", {"reason": f"Safety Case {case['id']} opened"},
@@ -121,6 +129,39 @@ class VerifyReq(BaseModel):
     note: str = Field("", max_length=1000)
 
 
+class MissionReq(BaseModel):
+    route_id: str
+
+
+class FindingReq(BaseModel):
+    checkpoint: str
+    type: str
+    severity: str
+    note: str = Field("", max_length=500)
+    actor: str = Field("operator", max_length=60)
+
+
+class ClearReq(BaseModel):
+    checkpoint: str
+    actor: str = Field("operator", max_length=60)
+
+
+class ScheduleReq(BaseModel):
+    every_minutes: int | None = Field(None, ge=1, le=1440)
+    enabled: bool | None = None
+    start_in_minutes: int | None = Field(None, ge=0, le=1440)
+
+
+class NewScheduleReq(BaseModel):
+    route_id: str
+    every_minutes: int = Field(ge=1, le=1440)
+    start_in_minutes: int = Field(0, ge=0, le=1440)
+
+
+class FindingCaseReq(BaseModel):
+    opened_by: str = Field("operator", max_length=60)
+
+
 class DroneReq(BaseModel):
     step: str
     actor: str = Field("operator", max_length=60)
@@ -146,6 +187,7 @@ def demo_reset():
     r.engine.pause()
     r.store.reset()
     r.cases = CaseManager(r.store)
+    r.drone.__init__(r.store, FACILITY, autostart=False)   # keep the running simulator thread, reset state
     r._last_level = "NORMAL"
     r.store.append("demo_reset", "system", {"note": "demo database cleared"})
     return {"ok": True}
@@ -277,6 +319,106 @@ def case_drone(case_id: str, req: DroneReq):
         _err(e)
 
 
+# ------------------------------------------------------------------------------ drone operations (SIMULATED)
+@app.get("/api/drone")
+def drone_overview():
+    d = rt().drone
+    return {"routes": FACILITY["routes"], "checkpoints": FACILITY["checkpoints"], "dock": FACILITY["drone_dock"],
+            "schedules": d.schedules(), "active": d.active_mission(), "missions": d.missions()[:30],
+            "findings": d.findings()[:50], "finding_types": FINDING_TYPES, "severities": SEVERITIES,
+            "simulated": True, "note": FACILITY["drone_note"],
+            "scheduler_note": "Simulated scheduler: patrols launch only while the AEROGUARD server is running."}
+
+
+def _mission_call(fn, *a, **k):
+    try:
+        return fn(*a, **k)
+    except KeyError as e:
+        _err(KeyError(f"not found: {e}"), 404)
+    except MissionError as e:
+        _err(e)
+
+
+@app.post("/api/drone/missions")
+def drone_start(req: MissionReq):
+    return _mission_call(rt().drone.create_mission, "PREVENTIVE", req.route_id, origin="MANUAL")
+
+
+@app.post("/api/drone/missions/{mid}/actions/{action}")
+def drone_control(mid: str, action: str):
+    if action not in ("approve", "pause", "resume", "cancel"):
+        _err(ValueError("action must be approve, pause, resume or cancel"), 422)
+    return _mission_call(rt().drone.control, mid, action)
+
+
+@app.post("/api/drone/missions/{mid}/findings")
+def drone_finding(mid: str, req: FindingReq):
+    return _mission_call(rt().drone.record_finding, mid, req.checkpoint, req.type, req.severity, req.note, req.actor)
+
+
+@app.post("/api/drone/missions/{mid}/clear")
+def drone_clear(mid: str, req: ClearReq):
+    return _mission_call(rt().drone.mark_clear, mid, req.checkpoint, req.actor)
+
+
+@app.post("/api/drone/schedules")
+def drone_new_schedule(req: NewScheduleReq):
+    return _mission_call(rt().drone.create_schedule, req.route_id, req.every_minutes, req.start_in_minutes)
+
+
+@app.post("/api/drone/schedules/{sid}")
+def drone_update_schedule(sid: str, req: ScheduleReq):
+    return _mission_call(rt().drone.update_schedule, sid, req.every_minutes, req.enabled, req.start_in_minutes)
+
+
+@app.post("/api/findings/{fid}/case")
+def finding_to_case(fid: str, req: FindingCaseReq):
+    r = rt()
+    f = _mission_call(r.drone.get_finding, fid)
+    if f["case_id"]:
+        _err(WorkflowError(f"finding already linked to {f['case_id']}"))
+    case = r.cases.open_finding_case(zone=ZONE, finding=f, opened_by=req.opened_by)
+    r.drone.link_finding(fid, case["id"])
+    r.store.append("alert", "simulated", {"level": case["severity"], "reasons": case["findings"][:1],
+                                          "from_finding": fid, "illustrative": True}, case_id=case["id"])
+    return case
+
+
+@app.post("/api/cases/{case_id}/inspection")
+def case_inspection(case_id: str):
+    """Request a drone inspection for a case: follow-up after the corrective action, targeted otherwise."""
+    r = rt()
+    try:
+        c = r.cases.get(case_id)
+    except KeyError:
+        _err(KeyError(case_id), 404)
+    if c["status"] == "CLOSED":
+        _err(WorkflowError("case is closed"))
+    if c.get("kind") == "INSPECTION_FINDING":
+        cps, mode, origin = [c["checkpoint"]], "FOLLOW_UP", "FOLLOW_UP"
+    else:
+        cps = r.drone.checkpoints_for_nodes(c.get("fire_nodes", []))
+        mode, origin = ("FOLLOW_UP", "FOLLOW_UP") if c.get("action") else ("TARGETED", "ALERT")
+    m = _mission_call(r.drone.create_mission, mode, origin=origin, checkpoints=cps, case_id=case_id,
+                      reason=f"Requested for {case_id}")
+    r.cases.attach_mission(case_id, m["id"])
+    return m
+
+
+@app.post("/api/cases/{case_id}/close-check")
+def case_close_check(case_id: str):
+    r = rt()
+    try:
+        c = r.cases.get(case_id)
+        if c.get("kind") == "INSPECTION_FINDING":
+            return r.cases.inspection_closure_check(case_id, r.drone.missions())
+        return r.cases.stabilization_check(case_id, r.engine.state.ticks)
+    except KeyError:
+        _err(KeyError(case_id), 404)
+    except WorkflowError as e:
+        _err(e)
+
+
 # ------------------------------------------------------------------------------ passport, timeline, fire pack
 @app.get("/api/timeline")
 def timeline(case_id: str | None = None, limit: int = 500):
@@ -293,6 +435,7 @@ def passport():
             "counts": {"total": len(cases), "closed": sum(c["status"] == "CLOSED" for c in cases),
                        "open": sum(c["status"] != "CLOSED" for c in cases)},
             "integrity": r.store.verify_chain(),
+            "inspections": {"missions": r.drone.missions()[:20], "findings": r.drone.findings()[:20], "simulated": True},
             "hedera": {"status": "pending", "note": "Hedera anchoring not implemented yet; integrity is a local SHA-256 chain"},
             "models": [{"name": c["name"], "version": c["version"], "model_sha256": c["model_sha256"],
                         "training_data_sha256": c["training_data_sha256"]} for c in registry.cards()]}

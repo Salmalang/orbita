@@ -38,6 +38,12 @@ CREATE TABLE IF NOT EXISTS cases (
   id TEXT PRIMARY KEY,
   data TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS records (
+  kind TEXT NOT NULL,
+  id TEXT NOT NULL,
+  data TEXT NOT NULL,
+  PRIMARY KEY (kind, id)
+);
 """
 
 
@@ -121,7 +127,23 @@ class Store:
             rows = self._db.execute("SELECT data FROM cases").fetchall()
         return sorted((json.loads(r["data"]) for r in rows), key=lambda c: c["opened_wall_ts"], reverse=True)
 
+    # ------------------------------------------------------------------ generic records (missions, findings, schedules)
+    def put_record(self, kind: str, rec: dict) -> None:
+        with self._lock:
+            self._db.execute("INSERT OR REPLACE INTO records (kind, id, data) VALUES (?, ?, ?)", (kind, rec["id"], _canonical(rec)))
+            self._db.commit()
+
+    def get_record(self, kind: str, rid: str) -> dict | None:
+        with self._lock:
+            r = self._db.execute("SELECT data FROM records WHERE kind = ? AND id = ?", (kind, rid)).fetchone()
+        return json.loads(r["data"]) if r else None
+
+    def list_records(self, kind: str) -> list[dict]:
+        with self._lock:
+            rows = self._db.execute("SELECT data FROM records WHERE kind = ?", (kind,)).fetchall()
+        return [json.loads(r["data"]) for r in rows]
+
     def reset(self) -> None:
         with self._lock:
-            self._db.executescript("DELETE FROM events; DELETE FROM cases; DELETE FROM sqlite_sequence;")
+            self._db.executescript("DELETE FROM events; DELETE FROM cases; DELETE FROM records; DELETE FROM sqlite_sequence;")
             self._db.commit()
