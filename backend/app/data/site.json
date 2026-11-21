@@ -1,0 +1,107 @@
+{
+  "id": "SITE-DEMO-01",
+  "name": "Usine Démo AEROGUARD (fictional demo site)",
+  "location": "Zone industrielle, Tunisia (fictional)",
+  "width_m": 120,
+  "height_m": 70,
+  "zones": [
+    {"id": "Z-ASM", "name": "Assembly", "area": {"x": 0, "y": 0, "width": 70, "height": 40}, "description": "Production lines, press, compressed air"},
+    {"id": "Z-ELEC", "name": "Electrical Room", "area": {"x": 70, "y": 0, "width": 22, "height": 22}, "description": "Main LV switchboard and distribution panels"},
+    {"id": "Z-CHEM", "name": "Chemical Storage", "area": {"x": 92, "y": 0, "width": 28, "height": 22}, "description": "Solvents and paints, forced extraction ventilation"},
+    {"id": "Z-WH", "name": "Warehouse", "area": {"x": 0, "y": 40, "width": 120, "height": 30}, "description": "High-bay racks, packaging, cold room, forklift LPG"}
+  ],
+  "assets": [
+    {
+      "id": "EP-01", "name": "Main LV switchboard (TGBT)", "type": "electrical_panel", "zone_id": "Z-ELEC", "criticality": 5,
+      "position": {"x": 77, "y": 7},
+      "nominal": {"rated_current_a": 400, "ambient_temp_c": 28, "thermal_resistance_c_per_w": 0.3, "thermal_time_constant_s": 1800, "electrical_resistance_ohm": 0.0005, "base_vibration_mm_s": 0, "base_gas_ppm": 0},
+      "thresholds": {"temperature_c": 80, "current_a": 400},
+      "has_sensors": ["temperature", "current"]
+    },
+    {
+      "id": "EP-02", "name": "Distribution panel - Assembly lines", "type": "electrical_panel", "zone_id": "Z-ELEC", "criticality": 4,
+      "position": {"x": 86, "y": 15},
+      "nominal": {"rated_current_a": 250, "ambient_temp_c": 28, "thermal_resistance_c_per_w": 0.4, "thermal_time_constant_s": 1500, "electrical_resistance_ohm": 0.0008, "base_vibration_mm_s": 0, "base_gas_ppm": 0},
+      "thresholds": {"temperature_c": 80, "current_a": 250},
+      "has_sensors": ["temperature", "current"]
+    },
+    {
+      "id": "EP-03", "name": "Distribution panel - Warehouse", "type": "electrical_panel", "zone_id": "Z-WH", "criticality": 3,
+      "position": {"x": 112, "y": 45},
+      "nominal": {"rated_current_a": 160, "ambient_temp_c": 30, "thermal_resistance_c_per_w": 0.5, "thermal_time_constant_s": 1200, "electrical_resistance_ohm": 0.001, "base_vibration_mm_s": 0, "base_gas_ppm": 0},
+      "thresholds": {"temperature_c": 80, "current_a": 160},
+      "has_sensors": ["temperature", "current"]
+    },
+    {
+      "id": "MO-01", "name": "Conveyor drive motor (22 kW)", "type": "motor", "zone_id": "Z-ASM", "criticality": 3,
+      "position": {"x": 20, "y": 15},
+      "nominal": {"rated_current_a": 42, "ambient_temp_c": 30, "thermal_resistance_c_per_w": 0.06, "thermal_time_constant_s": 2400, "electrical_resistance_ohm": 0.35, "base_vibration_mm_s": 1.6, "base_gas_ppm": 0},
+      "thresholds": {"temperature_c": 95, "current_a": 46, "vibration_mm_s": 7.1},
+      "has_sensors": ["temperature", "current", "vibration"]
+    },
+    {
+      "id": "MO-02", "name": "Hydraulic press motor (75 kW)", "type": "motor", "zone_id": "Z-ASM", "criticality": 4,
+      "position": {"x": 45, "y": 20},
+      "nominal": {"rated_current_a": 135, "ambient_temp_c": 30, "thermal_resistance_c_per_w": 0.04, "thermal_time_constant_s": 3000, "electrical_resistance_ohm": 0.06, "base_vibration_mm_s": 2.0, "base_gas_ppm": 0},
+      "thresholds": {"temperature_c": 95, "current_a": 148, "vibration_mm_s": 7.1},
+      "has_sensors": ["temperature", "current", "vibration"]
+    },
+    {
+      "id": "MO-03", "name": "Chemical store extraction fan motor (11 kW)", "type": "motor", "zone_id": "Z-CHEM", "criticality": 5,
+      "position": {"x": 116, "y": 4},
+      "nominal": {"rated_current_a": 21, "ambient_temp_c": 30, "thermal_resistance_c_per_w": 0.1, "thermal_time_constant_s": 1800, "electrical_resistance_ohm": 0.9, "base_vibration_mm_s": 1.4, "base_gas_ppm": 0},
+      "thresholds": {"temperature_c": 95, "current_a": 23, "vibration_mm_s": 7.1},
+      "has_sensors": ["temperature", "current", "vibration"]
+    },
+    {
+      "id": "CP-01", "name": "Screw air compressor (55 kW)", "type": "compressor", "zone_id": "Z-ASM", "criticality": 4,
+      "position": {"x": 62, "y": 32},
+      "nominal": {"rated_current_a": 100, "ambient_temp_c": 32, "thermal_resistance_c_per_w": 0.05, "thermal_time_constant_s": 2000, "electrical_resistance_ohm": 0.08, "base_vibration_mm_s": 2.2, "base_gas_ppm": 0},
+      "thresholds": {"temperature_c": 100, "current_a": 110, "vibration_mm_s": 7.1},
+      "has_sensors": ["temperature", "current", "vibration"]
+    },
+    {
+      "id": "CP-02", "name": "Cold-room refrigeration compressor (15 kW)", "type": "compressor", "zone_id": "Z-WH", "criticality": 3,
+      "position": {"x": 95, "y": 63},
+      "nominal": {"rated_current_a": 30, "ambient_temp_c": 30, "thermal_resistance_c_per_w": 0.12, "thermal_time_constant_s": 1600, "electrical_resistance_ohm": 0.5, "base_vibration_mm_s": 1.8, "base_gas_ppm": 0},
+      "thresholds": {"temperature_c": 100, "current_a": 33, "vibration_mm_s": 7.1},
+      "has_sensors": ["temperature", "current", "vibration"]
+    },
+    {
+      "id": "ST-01", "name": "High-bay racks - packaging and cardboard", "type": "storage", "zone_id": "Z-WH", "criticality": 4,
+      "position": {"x": 35, "y": 55},
+      "nominal": {"rated_current_a": 0, "ambient_temp_c": 30, "thermal_resistance_c_per_w": 1, "thermal_time_constant_s": 3600, "electrical_resistance_ohm": 0, "base_vibration_mm_s": 0, "base_gas_ppm": 5},
+      "thresholds": {"temperature_c": 57, "gas_ppm": 50},
+      "has_sensors": ["temperature", "gas"]
+    },
+    {
+      "id": "ST-02", "name": "Solvent and paint store", "type": "storage", "zone_id": "Z-CHEM", "criticality": 5,
+      "position": {"x": 102, "y": 12},
+      "nominal": {"rated_current_a": 0, "ambient_temp_c": 30, "thermal_resistance_c_per_w": 1, "thermal_time_constant_s": 3600, "electrical_resistance_ohm": 0, "base_vibration_mm_s": 0, "base_gas_ppm": 15},
+      "thresholds": {"temperature_c": 57, "gas_ppm": 2500},
+      "has_sensors": ["temperature", "gas"]
+    }
+  ],
+  "docking_stations": [
+    {"id": "DOCK-1", "name": "Dock 1 - Assembly", "zone_id": "Z-ASM", "position": {"x": 5, "y": 35}},
+    {"id": "DOCK-2", "name": "Dock 2 - Warehouse", "zone_id": "Z-WH", "position": {"x": 80, "y": 45}}
+  ],
+  "emergency_exits": [
+    {"id": "EXIT-W", "name": "West exit (Assembly)", "position": {"x": 0, "y": 20}},
+    {"id": "EXIT-N", "name": "North exit (Assembly)", "position": {"x": 35, "y": 0}},
+    {"id": "EXIT-E", "name": "East exit (loading bay)", "position": {"x": 120, "y": 30}},
+    {"id": "EXIT-S", "name": "South exit (Warehouse)", "position": {"x": 60, "y": 70}}
+  ],
+  "hazardous_materials": [
+    {"id": "HZ-01", "name": "Acetone-based solvents", "hazard_class": "Flammable liquid (Class 3)", "quantity": "800 L", "zone_id": "Z-CHEM", "position": {"x": 100, "y": 10}},
+    {"id": "HZ-02", "name": "Paints and thinners", "hazard_class": "Flammable liquid (Class 3)", "quantity": "400 L", "zone_id": "Z-CHEM", "position": {"x": 108, "y": 16}},
+    {"id": "HZ-03", "name": "LPG cylinders for forklifts", "hazard_class": "Flammable gas (Class 2.1)", "quantity": "6 x 13 kg", "zone_id": "Z-WH", "position": {"x": 85, "y": 50}},
+    {"id": "HZ-04", "name": "Cardboard and plastic packaging", "hazard_class": "Combustible solids (high fire load)", "quantity": "about 40 t", "zone_id": "Z-WH", "position": {"x": 35, "y": 55}},
+    {"id": "HZ-05", "name": "Hydraulic oil", "hazard_class": "Combustible liquid", "quantity": "600 L", "zone_id": "Z-ASM", "position": {"x": 45, "y": 24}}
+  ],
+  "emergency_contacts": {
+    "Protection Civile": "198",
+    "SAMU": "190",
+    "HSE manager (demo)": "to be configured"
+  }
+}

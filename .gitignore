@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# Secrets
+.env
+*.key
+
+# Data & models (large / generated)
+data/raw/
+data/generated/
+ai/registry/**/*.pt
+*.parquet
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Organizer document (contains contact details); kept locally only
+docs/cahier_des_charges.pdf
+
