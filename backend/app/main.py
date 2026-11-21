@@ -186,6 +186,7 @@ def facility():
 def demo_reset():
     r = rt()
     r.engine.pause()
+    r.engine.unload()
     r.store.reset()
     r.cases = CaseManager(r.store)
     r.drone.__init__(r.store, FACILITY, autostart=False)   # keep the running simulator thread, reset state

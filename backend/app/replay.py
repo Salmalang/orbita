@@ -136,6 +136,14 @@ class ReplayEngine:
         return {"event_id": event_id, "ticks": len(self._times), "model": card["name"] + "/" + card["version"],
                 "model_sha256": card["model_sha256"]}
 
+    def unload(self) -> None:
+        """Back to the initial state: no recording loaded."""
+        with self._lock:
+            self._window, self._model, self._features, self._card = None, None, None, None
+            self._times, self._idx, self._nodes = [], 0, {}
+            self.risk.reset()
+            self.state = ReplayState(speed=self.state.speed)
+
     def play(self):
         with self._lock:
             if self._window is None:
