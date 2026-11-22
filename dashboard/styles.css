@@ -99,6 +99,8 @@ table.t th { text-align: left; color: var(--muted); font-weight: 600; font-size:
 table.t td { padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
 table.t tr.click { cursor: pointer; }
 table.t tr.click:hover td { background: var(--panel2); }
+@media (max-width: 760px) { table.t { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; } .shell > *, .grid > * { min-width: 0; }
+  .tl .it { grid-template-columns: 96px 14px minmax(0, 1fr); } .pill { white-space: normal; } }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 details > summary { cursor: pointer; color: var(--brown); font-weight: 600; margin-bottom: 10px; }
 

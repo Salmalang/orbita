@@ -1,38 +1,43 @@
 # ARGOS — contributor guide
 
 Hackathon: **AeroEntrepreneur / Tunisian Aeroday**, in partnership with the Protection Civile and INJAZ Tunisia.
-**Hard deadline: Sunday 22 November, 09:00** (deliverables uploaded to the team Google Drive). The spec is `docs/cahier_des_charges.pdf`; every requirement is tracked in `docs/REQUIREMENTS.md`. Check that file before and after each work session.
+**Hard deadline: Sunday 22 November, 09:00** (deliverables uploaded to the team Google Drive). The organizers' specification is kept locally (not in the repository); the early planning checklist is `docs/REQUIREMENTS.md`. The current state of the prototype is in `README.md` and `docs/MVP_SCOPE.md`.
 
-## The product
-An industrial fire-safety platform for factories and high-risk sites that applies aviation safety principles:
-1. **IoT sensors** (temperature, current, gas, vibration) on critical assets.
-2. **AI anomaly detection** learns each asset's *normal signature* and flags drifts before fixed thresholds fire. It does not try to predict specific causes, because the Civil Protection told us causes are too varied to predict one by one.
-3. **Risk engine** scores severity (LOW / MEDIUM / HIGH / CRITICAL) with transparent, explainable rules.
-4. **Inspection drone**: dispatched by the platform with ATC-style priorities, flies only pre-mapped routes from docking stations, and brings thermal/visual evidence.
-5. **Digital Safety Case** that closes only with **3 signatures**: technician, independent verifier (a different person), and the **system** (readings back to normal over a stabilization period, plus a drone thermal re-check). Inspired by the independent inspection in EASA Part-145.
-6. **MEL mode** (Minimum Equipment List, as in EASA/FAA MMEL/MEL): MEDIUM cases can run under time-limited restrictions. HIGH/CRITICAL cases never can.
-7. **Emergency Fire Pack** for the Protection Civile: zone, hazmat, exits, last readings, secure link + QR + offline PDF.
-8. **Digital Black Box**: incident timeline replay.
-9. **Hedera Consensus Service**: only SHA-256 fingerprints are anchored (no confidential data). Detailed data stays private.
+## The product (as built)
+Earlier fire warning for a metal-working production hall, with a verified response workflow:
+1. **Sensors**: 9 multi-gas nodes of the Industrial Hall dataset, replayed from real recordings.
+2. **AI zone model** (held-out) separating incipient fires from routine work fumes; evaluated in `ai/reports/evaluation.md`.
+3. **Risk engine**: transparent rules (persistence, two-node coincidence, sensor health) → NORMAL / WATCH / HIGH / CRITICAL.
+4. **Inspection drone**: **simulated** patrols, alert inspections and findings (no physical drone, no imagery).
+5. **Digital Safety Case**: closes only with the technician's action, an independent verifier (a different person) and 15 minutes of live readings back to normal.
+6. **Emergency Fire Pack** (site sheet) and, for each CRITICAL fire incident, a **Firefighter Emergency Pack**: signed, expiring QR link, mobile briefing and PDF on a fictional demo factory.
+7. **Digital Black Box**: hash-chained incident timeline.
+8. **Hedera Consensus Service** (testnet): only SHA-256 fingerprints are anchored (no confidential data).
+9. **AI learning**: controlled data pipeline only; no automatic retraining or promotion.
+
+Ideas from the original concept that were **not** built: MEL mode, aviation-style drone dispatch, drone thermal re-check, a hardware drone adapter, current and vibration sensors on live assets.
 
 Certified fire alarms always remain independent of ARGOS. Never write code or copy that implies otherwise.
 
 ## Mandatory constraints from the spec
-Realism and consistency with aeronautical standards · real-time interactivity (the user makes decisions live) · **real data only, never generated** (see docs/DATASETS.md; Protection Civile data when received) · **physical simulation** = physics models fitted on real measurements (`physics/`) · safety of people and the environment first.
+Realism and consistency with aeronautical standards · real-time interactivity (the user makes decisions live) · **real data only, never generated** (see docs/DATASETS.md) · **physical simulation** = physics models fitted on real measurements (`physics/`) · safety of people and the environment first.
 
 ## Repo layout
 ```
-docs/        spec PDF, REQUIREMENTS.md, CONTRACTS.md, later MODEL_REPORT.md, HEDERA.md, DEMO.md
-backend/     FastAPI app. backend/app/schemas.py = SINGLE SOURCE OF TRUTH for data contracts
-backend/app/data/site.json   demo factory (zones, assets, docks, exits, hazmat)
+docs/        model report, data audit, datasets, MVP scope, contracts, demo script
+backend/     FastAPI app: replay, risk engine, Safety Cases, event store, emergency pack
+backend/app/data/facility.json         production hall used by the replay (illustrative layout)
+backend/app/data/emergency_site.json   fictional factory of the firefighter briefing
+backend/app/data/site.json             original multi-asset contract model (tests only)
 ingest/      dataset registry, downloader (hash-checked) and loaders for the real datasets
 physics/     physics models identified on real data (thermal energy balance)
-ai/          anomaly models, training, evaluation, model registry, inference API
-hedera/      HCS anchoring + verification
-drone/       mission dispatcher + flight simulation (+ optional DJI Tello adapter, off by default)
-dashboard/   static web UI served by FastAPI (NO Node.js build step: Node is not installed)
+ai/          models, training, evaluation, model registry, inference
+hedera/      HCS anchoring + mirror-node verification
+learning/    outcome eligibility, dataset manifests, leakage check
+drone/       simulated missions, scheduler and findings
+dashboard/   static web UI served by FastAPI (no Node.js build step)
 tests/       pytest suite
-scripts/     demo and utility scripts
+scripts/     data audit, figures, model report, internal build tracker
 ```
 
 ## Conventions

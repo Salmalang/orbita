@@ -1,5 +1,7 @@
 # One-minute demo video script
 
+> Original recording plan. The final video also shows the Firefighter Emergency Pack (QR code) and the Hedera testnet verification, which were added after this plan was written.
+
 **Message:** PREVENTIVE INSPECTION → EARLY WARNING → INVESTIGATION → CORRECTIVE ACTION → VERIFICATION → TRACEABILITY.
 
 ## Before recording (5 minutes)
@@ -41,5 +43,6 @@ If 60 s is too tight, drop the 42–52 s segment and keep the earlier-warning cl
 - The drone, its movement, schedules, missions and findings (no physical drone, no imagery, no validated vision/thermal model).
 - Facility layout, sensor positions, checkpoints, exits and contacts.
 - Human roles (demo roles, no real authentication).
-- Hedera anchoring is **pending**, not implemented.
+- Hedera: only a fingerprint of the evidence log is anchored on **testnet**. It makes later changes detectable; it does not prove that sensor readings are true.
+- Firefighter briefing: fictional demo factory, demo access, decision support only (no entry route, not an approved emergency plan, never contacts emergency services).
 - Never claim proven fire prevention or validation in an operating factory.

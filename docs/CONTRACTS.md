@@ -2,6 +2,8 @@
 
 The code is the source of truth: [`backend/app/schemas.py`](../backend/app/schemas.py). This page explains it. If the two disagree, the code wins: fix this page.
 
+> These contracts and `backend/app/data/site.json` are the original multi-asset design, kept and tested (`tests/test_contracts.py`). The running prototype uses `backend/app/data/facility.json` (production hall, replay) and `backend/app/data/emergency_site.json` (fictional factory of the firefighter briefing). MEL fields are defined here but not used by the interface.
+
 All timestamps are **timezone-aware UTC** (naive datetimes are rejected). Unknown fields are rejected. Units are carried in field names.
 
 ## Flow

@@ -4,7 +4,7 @@
 
 Built for **AeroEntrepreneur 2026** (Tunisian Aeroday × Protection Civile × INJAZ Tunisia).
 
-> Prototype. Sensor data is a **historical replay of real recordings** (Industrial Hall dataset, controlled fire and nuisance experiments, 2023). The facility layout is illustrative. Human roles are demo roles. Drone inspection is a simulated workflow. Hedera testnet anchoring is implemented but only runs once local credentials are configured (see below).
+> Prototype. Sensor data is a **historical replay of real recordings** (Industrial Hall dataset, controlled fire and nuisance experiments, 2023). The facility layout is illustrative. Human roles are demo roles. Drone inspection is a simulated workflow. Hedera anchoring runs on the public **testnet** (see below). The firefighter briefing uses a fictional demo factory.
 
 ## What it does
 
@@ -12,7 +12,7 @@ Built for **AeroEntrepreneur 2026** (Tunisian Aeroday × Protection Civile × IN
 2. **AI zone model** tells incipient fires (incl. a cable fire) apart from routine nuisances such as welding, cutting and exhaust.
 3. **Explainable risk engine**: persistence + two-node coincidence (as in "double-knock" fire systems) + sensor health → NORMAL / WATCH / HIGH / CRITICAL with reasons.
 4. **Digital Safety Case** opens on CRITICAL and closes only with three confirmations: the technician's action, an **independent** verifier, and **15 minutes of measured readings back to normal**.
-5. **Safety Passport**, **Black Box** timeline (hash-chained event log) and **Emergency Fire Pack** for the Protection Civile.
+5. **Safety Passport**, **Black Box** timeline (hash-chained event log), a site-level **Emergency Fire Pack** page and, for each critical fire incident, a **Firefighter Emergency Pack** (QR code, mobile briefing, PDF).
 
 Certified fire alarms and emergency shutdown systems always remain independent of ARGOS.
 
@@ -49,7 +49,7 @@ Click **▶ Guided tour** (top right). Each step explains what you see; its butt
 Patrol schedule → start the full patrol → watch the drone visit the checkpoints → record an illustrative finding (blocked east exit) → open a Safety Case → technician action → independent verification → follow-up drone inspection marks the exit clear → case closes (simulated inspection evidence, labelled).
 
 **Scenario 2 · Real-data AI early warning (real recording, held-out model)**
-Overview → load the authentic **Cable#4** recording → replay at 60× → CRITICAL when two sensors agree; a Safety Case opens and the replay pauses → approve the alert-triggered drone inspection → technician action → independent verification → resume the replay → closure check **refuses** to close because the post-fire recording repeats held values → Equipment Passport → Black Box.
+Overview → load the authentic **Cable#4** recording → replay at 60× → CRITICAL when two sensors agree; a Safety Case opens and the replay pauses → Firefighter Emergency Pack (QR code, firefighter view, PDF) → approve the alert-triggered drone inspection → technician action → independent verification → resume the replay → closure check **refuses** to close because the post-fire recording repeats held values → Equipment Passport → Black Box.
 
 Use **Reset demo** (sidebar) or "Start from a clean slate" in the picker to begin again. Try also **Exhaust#1** (nuisance: no case opens) and **Welding#1** (known limitation: the model never saw welding).
 
@@ -65,7 +65,7 @@ One-minute video plan: [docs/DEMO_VIDEO_SCRIPT.md](docs/DEMO_VIDEO_SCRIPT.md).
 | Incident Follow-up (Safety Cases) | Investigations from sensor alerts or patrol findings; action, independent verification, closure rules |
 | Equipment History | Zone history, cases, inspections, integrity chain, model provenance |
 | Event Timeline (black box) | Every event in order, labelled by source (recorded data, model, risk engine, human demo role, simulated) |
-| Emergency Fire Pack | Printable emergency sheet for responders |
+| Emergency Fire Pack | Site-level printable sheet for responders (illustrative layout). Incident-specific briefings are the Firefighter Emergency Packs on each critical incident page |
 | AI Evidence | What the real data supports and what it does not |
 
 ## Real versus simulated
@@ -80,7 +80,7 @@ One-minute video plan: [docs/DEMO_VIDEO_SCRIPT.md](docs/DEMO_VIDEO_SCRIPT.md).
 | Closure of patrol-finding cases | Based on a **simulated** follow-up inspection, labelled as such |
 | Facility layout, checkpoint positions, contacts | **Illustrative** |
 | Roles | Demo roles, no authentication |
-| Hedera anchoring | **Real code** for Hedera testnet (fingerprint only, mirror-node verification); inactive until `.env` holds testnet credentials |
+| Hedera anchoring | **Real** on Hedera **testnet** (fingerprint only, mirror-node verification). Demo topic `0.0.11560556`: one evidence-chain fingerprint anchored and verified. Inactive without testnet credentials in `.env` |
 | Firefighter Emergency Pack | **Real** QR link, signed expiring access, briefing built from real incident records; factory layout **fictional demo data**; demo access mode |
 | AI learning from new incidents | **Data pipeline only**: outcome labels, eligibility, dataset manifest + SHA-256. No retraining has happened: replayed incidents come from recordings already used in training |
 
@@ -92,11 +92,13 @@ ARGOS stores a digital fingerprint of the incident history on Hedera so later ch
 2. Copy `.env.example` to `.env` (git-ignored) and fill `HEDERA_ACCOUNT_ID` and `HEDERA_PRIVATE_KEY`. Leave `HEDERA_TOPIC_ID` empty to create a topic on first anchor.
 3. Restart the server, open **Equipment History → Hedera evidence**, click **Anchor evidence to Hedera**, then **Verify on Hedera**.
 
-Verification reads the message back from the public mirror node and compares it with the stored snapshot and with a fresh recomputation of the local chain. Statuses: Verified on Hedera, Awaiting confirmation, Evidence mismatch, Hedera unavailable, Not anchored. Hedera proves a fingerprint existed at a consensus time; it does not prove sensor readings or labels are physically true.
+Verification reads the message back from the public mirror node and compares it with the stored snapshot and with a fresh recomputation of the local chain. Statuses: Verified on Hedera, Awaiting confirmation, Evidence mismatch, Hedera unavailable, Not anchored.
+
+Testnet record for this prototype: topic `0.0.11560556`, message 1, transaction `0.0.11555158@1795303235.891794919` ([HashScan](https://hashscan.io/testnet/topic/0.0.11560556)). **Reset demo** clears the local database, including its anchor records, so after a reset the interface shows "Not anchored" until a new fingerprint is anchored. Hedera proves a fingerprint existed at a consensus time; it does not prove sensor readings or labels are physically true.
 
 ## Firefighter Emergency Pack (QR code)
 
-When a fire-related incident reaches **CRITICAL**, ARGOS issues a Firefighter Emergency Pack automatically. The incident page shows a QR code, a **Firefighter Emergency Pack** button, and downloads for the QR image and a printable PDF briefing.
+When a fire-related incident reaches **CRITICAL**, ARGOS issues a Firefighter Emergency Pack automatically. The incident page shows a QR code, an **Open Firefighter View** button, and downloads for the QR image and a printable PDF briefing. Clicking the QR code or the button opens the same briefing on this computer (in a new tab; where the browser opens it in the same tab, a bar leads back to the incident).
 
 - The QR code holds only a URL. The URL carries a signed, incident-specific token that expires after 2 hours (`ARGOS_PACK_TTL_MIN`). The operator can revoke it or issue a new one. The token never enters the evidence chain or Hedera.
 - Scanning opens a mobile-first briefing: severity banner, immediate summary, factory floor plan, emergency access and hazards, sensor and AI analysis, the timeline, and provenance and verification. Confirmed facts, sensor observations, AI hypotheses and unknowns are shown separately. No entry route is ever recommended.
@@ -105,7 +107,7 @@ When a fire-related incident reaches **CRITICAL**, ARGOS issues a Firefighter Em
 - To scan from a phone on the same network, start the server with `--host 0.0.0.0` and allow the port in the firewall. The QR code uses this computer's network address. Set `ARGOS_PUBLIC_URL` to use another address (for example an HTTPS host).
 - Demo access only: a real deployment needs authenticated responders, HTTPS and the site's verified emergency plan. The briefing is decision support, not an approved emergency response plan. ARGOS never contacts emergency services on its own.
 
-Guided Tour 2 includes the pack: after the incident opens, the tour shows the QR code, opens the briefing and offers the PDF.
+Guided Tour 2 includes the pack: after the incident opens, the tour shows the QR code, opens the firefighter view and offers the PDF.
 
 ## AI learning (controlled)
 
@@ -116,9 +118,9 @@ After the independent check, a second person confirms what really happened (real
 ```bash
 .venv/Scripts/python -m pytest -q
 ```
-Covers dataset integrity, loaders, physics model, AI models, registry tamper detection, causal (no-future-data) features, risk engine, Safety Case rules (independent verifier, stabilization), event-chain tampering, Hedera anchoring and verification (network mocked), learning eligibility and dataset hashing, API errors, UI assets and the full workflow on real data.
+Covers dataset integrity, loaders, physics model, AI models, registry tamper detection, causal (no-future-data) features, risk engine, Safety Case rules (independent verifier, stabilization), event-chain tampering, Hedera anchoring and verification (network mocked), learning eligibility and dataset hashing, the Firefighter Emergency Pack (signed links, expiry, revocation, QR, PDF), API errors, UI assets and the full workflow on real data.
 
-## Build tracker
+## Build tracker (internal team tool)
 ```bash
 .venv/Scripts/python scripts/tracker/server.py
 ```

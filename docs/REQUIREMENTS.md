@@ -1,6 +1,8 @@
 # Requirements checklist — AeroEntrepreneur (Tunisian Aeroday × Protection Civile × INJAZ)
 
-Source: `docs/cahier_des_charges.pdf`. Section numbers (§) follow the PDF's own numbering.
+> Planning checklist written at the start of the project. The statuses and the "how we answer" column are **not maintained** and include early ideas that were not built (MEL mode, aviation-style dispatch, drone thermal checks). The current state of the prototype is in [README.md](../README.md) and [MVP_SCOPE.md](MVP_SCOPE.md).
+
+Source: the organizers' specification (kept locally, not in the repository). Section numbers (§) follow its own numbering.
 Status: ⬜ todo · 🟡 in progress · ✅ done · ➖ not applicable / team task outside the repo
 
 **Hard deadline: 22 November, 09:00.** Any deliverable submitted after 09:00 is rejected (§05). Submit to the team Google Drive folder.

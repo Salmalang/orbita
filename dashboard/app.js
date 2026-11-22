@@ -379,7 +379,7 @@ function PackCard({ c, toast }) {
           <img src=${`/api/cases/${c.id}/pack/qr.png?g=${v.generation}`} alt=${`QR code: click to open the firefighter briefing of incident ${c.id}`} width="200" height="200"/>
           <span class="qrhint">Click or scan to open</span></a>`
         : html`<div class="qrnone">${v.state === "REVOKED" ? "Link revoked" : v.state === "EXPIRED" ? "Link expired" : "No link"}</div>`}</div>
-      <div class="stack" style="flex:1;min-width:0">
+      <div class="stack" style="flex:1 1 260px;min-width:0">
         <div class="row">
           <a class=${`btn primary big ${active ? "" : "disabled"}`} href=${firefighterView(v) || "#"} target="_blank" rel="noopener">🚒 Open Firefighter View</a>
           <a class=${`btn ${active ? "" : "disabled"}`} href=${`/api/cases/${c.id}/pack/qr.png?g=${v.generation}`} download=${`ARGOS_QR_${c.id}.png`}>⬇ QR code</a>
@@ -791,7 +791,7 @@ function FirePack({ ctx }) {
   const fac = f.facility, dec = f.latest?.decision, nodes = f.latest?.nodes || {};
   const flagged = Object.entries(nodes).filter(([k, v]) => dec?.fire_nodes?.includes(k) || v.p_fire >= 0.5);
   return html`<div class="page">
-    <div class="row between noprint"><div class="banner info" style="flex:1">ⓘ Emergency reference for the Protection Civile. Layout, exits and contacts are <b>illustrative</b> for this demo site; readings come from the historical replay.</div>
+    <div class="row between noprint"><div class="banner info" style="flex:1">ⓘ Site-level emergency reference for the Protection Civile. Layout, exits and contacts are <b>illustrative</b> for this demo site; readings come from the historical replay. Each critical fire incident also has its own Firefighter Emergency Pack (QR code) on the incident page.</div>
       <button class="btn primary" onClick=${() => print()}>🖨 Print / save as PDF (offline copy)</button></div>
     <div class="card"><h2>EMERGENCY FIRE PACK · ${fac.name} <span class="r">${f.replay.event_id ? `replay ${f.replay.event_id} · recorded ${fmtT(f.replay.cursor, true)}` : "no replay loaded"}</span></h2>
       <div class="grid g-main">
@@ -973,7 +973,7 @@ function DemoPicker({ onPick, onClose }) {
     <p class="muted">Two scenarios. Every step uses the real application; you can also click around freely at any time.</p>
     <div class="grid g2">
       <button class="ev" onClick=${() => onPick("patrol")}><b>1 · Routine drone inspection</b><small>Scheduled patrol, route, checkpoints, an illustrative finding, Safety Case, corrective action, verification, follow-up inspection.</small><span class="pill sim">simulated drone</span></button>
-      <button class="ev" onClick=${() => onPick("sensor")}><b>2 · Early fire warning on real data</b><small>Authentic Cable#4 recording, held-out AI model, CRITICAL risk, automatic Safety Case, targeted inspection, verification, stabilization refusal, Passport, Black Box.</small><span class="pill rec">real recorded data</span></button>
+      <button class="ev" onClick=${() => onPick("sensor")}><b>2 · Early fire warning on real data</b><small>Authentic Cable#4 recording, held-out AI model, CRITICAL risk, automatic Safety Case, firefighter QR briefing, targeted inspection, verification, stabilization refusal, Passport, Black Box.</small><span class="pill rec">real recorded data</span></button>
     </div>
     <div class="row" style="margin-top:12px"><button class="btn sm ghost" onClick=${async () => { if (confirm("Clear all demo cases, missions and events before starting?")) { await api("/api/demo/reset", {}); location.reload(); } }}>Start from a clean slate</button><span class="grow"></span><button class="btn ghost" onClick=${onClose}>Close</button></div>
   </div></div>`;
