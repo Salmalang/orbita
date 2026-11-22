@@ -35,7 +35,8 @@ const eventTitle = (e) => ({
   inspection_finding: `Drone finding (illustrative): ${e.payload.type}`, checkpoint_clear: `Marked clear: ${e.payload.checkpoint}`,
   replay_auto_paused: "Replay paused for the response", outcome_confirmed: "Real outcome confirmed by a second person",
   hedera_anchor_submitted: "Evidence fingerprint sent to Hedera", hedera_verification: `Hedera check: ${e.payload.status}`,
-  learning_dataset_prepared: `Learning dataset ${e.payload.dataset_version} prepared`, patrol_schedule_set: "Patrol schedule updated", mission_cancel: "Drone inspection cancelled",
+  learning_dataset_prepared: `Learning dataset ${e.payload.dataset_version} prepared`, emergency_pack_issued: "Firefighter emergency pack issued (QR link)",
+  emergency_pack_revoked: "Firefighter emergency pack link revoked", emergency_pack_opened: "Firefighter briefing opened by a responder", patrol_schedule_set: "Patrol schedule updated", mission_cancel: "Drone inspection cancelled",
   mission_pause: "Drone inspection paused", mission_resume: "Drone inspection resumed", case_escalated: "Fire signal still present after the intervention",
 }[e.kind] || e.kind);
 const LEVEL_COLOR = { NORMAL: "#2E7D4F", WATCH: "#2F5F98", HIGH: "#9A5B00", CRITICAL: "#B3261E", NO_DATA: "#9A9088" };
@@ -356,6 +357,44 @@ function nowText(c, isFinding, missions) {
   return "";
 }
 
+
+// ------------------------------------------------------------------ firefighter emergency pack
+function PackCard({ c, toast }) {
+  const [v, setV] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(async () => { try { setV(await api(`/api/cases/${c.id}/pack`)); } catch (e) { setV(null); } }, [c.id]);
+  usePoll(load, 5000, [c.id, c.severity, c.escalations]);
+  if (!v || !v.eligible) return null;
+  const run = async (path) => { setBusy(true); try { setV(await api(`/api/cases/${c.id}/pack/${path}`, {})); } catch (e) { toast(e.message, true); } setBusy(false); };
+  const active = v.state === "ACTIVE";
+  return html`<div class="card packcard" id="firepack">
+    <div class="packhead"><div><div class="packtitle">✚ Firefighter Emergency Pack</div>
+      <div class="muted">Issued ${v.auto ? "automatically" : "by the operator"} because this fire incident reached CRITICAL. Scan to open the responder briefing.</div></div>
+      <span class="pill bad">DEMO ACCESS · fictional factory data</span></div>
+    <div class="packbody">
+      <div class="qrbox">${active ? html`<img src=${`/api/cases/${c.id}/pack/qr.png?g=${v.generation}`} alt=${`QR code for the firefighter briefing of incident ${c.id}`} width="200" height="200"/>`
+        : html`<div class="qrnone">${v.state === "REVOKED" ? "Link revoked" : v.state === "EXPIRED" ? "Link expired" : "No link"}</div>`}</div>
+      <div class="stack" style="flex:1;min-width:0">
+        <div class="row">
+          <a class=${`btn primary ${active ? "" : "disabled"}`} href=${v.local_url || "#"} target="_blank" rel="noopener">🚒 Firefighter Emergency Pack</a>
+          <a class=${`btn ${active ? "" : "disabled"}`} href=${`/api/cases/${c.id}/pack/qr.png?g=${v.generation}`} download=${`ARGOS_QR_${c.id}.png`}>⬇ QR code</a>
+          <a class="btn" href=${`/api/cases/${c.id}/pack/briefing.pdf`} download=${`ARGOS_firefighter_briefing_${c.id}.pdf`}>⬇ Briefing PDF</a>
+        </div>
+        <dl class="kv">
+          <dt>Status</dt><dd><span class=${`pill ${active ? "ok" : "pending"}`}>${active ? "✓ link active" : v.state.toLowerCase()}</span>${v.opened ? html` <span class="muted">opened by a responder ${fmtWall(v.opened)}</span>` : ""}</dd>
+          <dt>Expires</dt><dd>${fmtWall(v.expires_at)} <span class="muted">(short-lived, incident-specific, revocable)</span></dd>
+          <dt>QR link</dt><dd class="hash">${v.qr_url || "—"}</dd>
+        </dl>
+        <div class="muted" style="font-size:12.5px">The QR code contains only this link, not the incident data. ${v.network_note}</div>
+        ${v.lan_hint && html`<div class="muted" style="font-size:12.5px">ⓘ ${v.lan_hint}</div>`}
+        <div class="row"><button class="btn sm" disabled=${busy} onClick=${() => run("issue")}>Issue new link</button>
+          <button class="btn sm danger" disabled=${busy || !active} onClick=${() => run("revoke")}>Revoke link</button>
+          <span class="muted" style="font-size:12px">ARGOS never contacts emergency services by itself. Not an approved emergency response plan.</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+
 function CaseDetail({ id, ctx }) {
   const { role, names, toast, refresh, drone, refreshDrone } = ctx;
   const [c, setC] = useState(null);
@@ -398,6 +437,7 @@ function CaseDetail({ id, ctx }) {
     <div class="steps">${steps.map(([t, w], i) => html`<div class=${`step ${done[i] ? "done" : i === cur ? "cur" : ""}`}>
       <div class="n">Step ${i + 1} · ${done[i] ? "done" : i === cur ? "now" : "later"}</div><b>${done[i] ? "✓ " : i === cur ? "→ " : ""}${t}</b><div class="who">${w}</div></div>`)}</div>
     <div class="card nowbox"><h2>Where we are</h2><div style="font-size:16px">${nowText(c, isFinding, missions)}</div></div>
+    ${!isFinding && html`<${PackCard} c=${c} toast=${toast}/>`}
 
     <div class="grid g-main">
       <div class="stack">
@@ -758,7 +798,7 @@ function FirePack({ ctx }) {
           <div><b>Hazardous materials</b><div class="muted">${fac.hazardous_materials.length ? "" : fac.hazardous_materials_note}</div></div>
           <div><b>Activities in the hall</b><div class="muted">${fac.activities.join(" · ")}</div></div>
           <div><b>Emergency contacts</b><table class="t"><tbody>${fac.emergency_contacts.map(c => html`<tr><td>${c.name}</td><td class="num"><b>${c.phone}</b></td></tr>`)}</tbody></table></div>
-          ${f.open_cases.length > 0 && html`<div><b>Open Safety Cases</b><div class="muted">${f.open_cases.map(c => `${c.id} (${c.status})`).join(", ")}</div></div>`}
+          ${f.open_cases.length > 0 && html`<div><b>Open incidents</b><div class="muted">${f.open_cases.map(c => html`<a href=${`#/cases/${c.id}`}>${c.id}</a> (${c.status.replaceAll("_", " ").toLowerCase()}${c.kind === "SENSOR_ALERT" && c.severity === "CRITICAL" ? ", firefighter QR pack available" : ""}) `)}</div></div>`}
         </div>
       </div></div></div>`;
 }
@@ -856,6 +896,20 @@ const SCENARIOS = {
         act: async (ctx) => { const c = sensorCase(ctx); location.hash = `#/cases/${c.id}`; return { case: c.id }; }, label: "Open the incident",
         done: (ctx, d) => !!d.case,
         text: "ARGOS saved the sensor readings and asked for a drone inspection. The drone waits for your approval." },
+      { title: "Firefighter Emergency Pack", label: "Show the QR code",
+        act: async (ctx, d) => { location.hash = `#/cases/${d.case}`; const v = await api(`/api/cases/${d.case}/pack`);
+          setTimeout(() => document.getElementById("firepack")?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+          return { packUrl: v.local_url, packState: v.state }; },
+        done: (ctx, d) => d.packState === "ACTIVE",
+        text: "The incident is CRITICAL, so ARGOS issued a Firefighter Emergency Pack automatically. The QR code holds only a short-lived link for this incident, not the data. Demo access, fictional factory layout." },
+      { title: "What the firefighter sees", label: "Open the emergency briefing",
+        act: async (ctx, d) => { const a = document.createElement("a"); a.href = d.packUrl; a.target = "_blank"; a.rel = "noopener";
+          document.body.appendChild(a); a.click(); a.remove(); return { packOpened: true }; },
+        text: "Scanning the QR code opens this mobile page: severity, where, nearby hazards, the demonstration factory map, sensor and AI analysis, access points and the timeline. Facts, sensor observations, AI hypotheses and unknowns are kept apart." },
+      { title: "Offline backup", label: "Download the briefing PDF",
+        act: async (ctx, d) => { const a = document.createElement("a"); a.href = `/api/cases/${d.case}/pack/briefing.pdf`; a.download = `ARGOS_firefighter_briefing_${d.case}.pdf`; document.body.appendChild(a); a.click(); a.remove(); return { packPdf: true }; },
+        done: (ctx, d) => !!d.packPdf,
+        text: "The QR page needs network access to the ARGOS server. The printable PDF (summary, map, access and hazards, timeline) is the offline backup." },
       { title: "Approve the targeted inspection", label: "Approve drone flight",
         act: async (ctx, d) => { const m = ctx.drone?.missions.find(x => x.case_id === d.case && x.status === "AWAITING_APPROVAL");
           if (!m) throw new Error("No inspection waiting for approval for this case."); await api(`/api/drone/missions/${m.id}/actions/approve`, {}); return { mission: m.id }; },
@@ -936,7 +990,9 @@ function App() {
   const [names] = useState({ technician: "Amine B. (technician)", verifier: "Sami K. (HSE verifier)" });
   const [msg, setMsg] = useState(null);
   const [online, setOnline] = useState(true);
-  const [demo, setDemo] = useState(null);
+  // the tour survives a reload or a same-tab navigation (e.g. opening the firefighter briefing)
+  const [demo, setDemoRaw] = useState(() => { try { return JSON.parse(sessionStorage.getItem("argos-tour")) || null; } catch (e) { return null; } });
+  const setDemo = (d) => { setDemoRaw(d); try { d ? sessionStorage.setItem("argos-tour", JSON.stringify(d)) : sessionStorage.removeItem("argos-tour"); } catch (e) { /* storage unavailable */ } };
   const [picker, setPicker] = useState(false);
   const tickRef = useRef({ event: null, ticks: [] });
 

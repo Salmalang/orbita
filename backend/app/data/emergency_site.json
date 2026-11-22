@@ -1,0 +1,385 @@
+{
+  "id": "ARGOS-DEMO-FACTORY",
+  "name": "ARGOS Demonstration Factory (fictional)",
+  "demo": true,
+  "demo_note": "Fictional layout created for the hackathon demonstration. It does not represent any real industrial facility. Rooms, exits, access points, equipment, hazards and quantities are invented demonstration data. Only the sensor readings of Hall A come from real recordings (Industrial Hall dataset, 10 x 22 m hall, controlled experiments, 2023).",
+  "size_m": {
+    "width": 56,
+    "height": 35
+  },
+  "hall": {
+    "id": "HALL-A",
+    "offset": {
+      "x": 14,
+      "y": 6
+    }
+  },
+  "north_arrow": true,
+  "rooms": [
+    {
+      "id": "HALL-A",
+      "label": "Production Hall A",
+      "sub": "sensor-monitored",
+      "x": 14,
+      "y": 6,
+      "w": 22,
+      "h": 10,
+      "type": "production",
+      "label_above": true
+    },
+    {
+      "id": "ELEC",
+      "label": "Electrical room",
+      "sub": "main LV switchboard",
+      "x": 6,
+      "y": 6,
+      "w": 8,
+      "h": 4,
+      "type": "electrical"
+    },
+    {
+      "id": "PASS-W",
+      "label": "West passage",
+      "x": 6,
+      "y": 10,
+      "w": 8,
+      "h": 2,
+      "type": "corridor"
+    },
+    {
+      "id": "COMP",
+      "label": "Compressor room",
+      "x": 6,
+      "y": 12,
+      "w": 8,
+      "h": 4,
+      "type": "plant"
+    },
+    {
+      "id": "CORR",
+      "label": "Main corridor",
+      "x": 6,
+      "y": 16,
+      "w": 44,
+      "h": 3,
+      "type": "corridor"
+    },
+    {
+      "id": "OFF",
+      "label": "Offices & control room",
+      "x": 6,
+      "y": 19,
+      "w": 14,
+      "h": 9,
+      "type": "office"
+    },
+    {
+      "id": "WH",
+      "label": "Finished-goods warehouse",
+      "sub": "packaging, high fire load",
+      "x": 20,
+      "y": 19,
+      "w": 16,
+      "h": 9,
+      "type": "storage"
+    },
+    {
+      "id": "PAINT",
+      "label": "Paint & solvent store",
+      "x": 36,
+      "y": 19,
+      "w": 8,
+      "h": 6,
+      "type": "hazard"
+    },
+    {
+      "id": "WS",
+      "label": "Maintenance workshop",
+      "x": 44,
+      "y": 19,
+      "w": 6,
+      "h": 9,
+      "type": "workshop"
+    },
+    {
+      "id": "YARD",
+      "label": "Loading yard",
+      "sub": "outdoor",
+      "x": 36,
+      "y": 4,
+      "w": 16,
+      "h": 12,
+      "type": "outdoor"
+    }
+  ],
+  "hall_features": [
+    {
+      "id": "F-WELD",
+      "label": "Welding bay (hot work)",
+      "x": 29,
+      "y": 7,
+      "w": 6,
+      "h": 5,
+      "type": "hazard"
+    },
+    {
+      "id": "F-RACK",
+      "label": "Material storage racks",
+      "x": 20,
+      "y": 14.4,
+      "w": 10,
+      "h": 1.2,
+      "type": "equipment"
+    },
+    {
+      "id": "F-TRAY",
+      "label": "Cable tray (north wall)",
+      "x": 18,
+      "y": 6.4,
+      "w": 14,
+      "h": 0.6,
+      "type": "equipment"
+    },
+    {
+      "id": "F-CAB",
+      "label": "Electrical cabinets",
+      "x": 15.4,
+      "y": 6.6,
+      "w": 2.4,
+      "h": 1.2,
+      "type": "electrical"
+    }
+  ],
+  "exits": [
+    {
+      "id": "EX-HW",
+      "label": "Hall A west door",
+      "x": 14,
+      "y": 11,
+      "side": "v"
+    },
+    {
+      "id": "EX-HE",
+      "label": "Hall A east loading door",
+      "x": 36,
+      "y": 11,
+      "side": "v"
+    },
+    {
+      "id": "EX-HS",
+      "label": "Hall A south door (to corridor)",
+      "x": 25,
+      "y": 16,
+      "side": "h"
+    },
+    {
+      "id": "EX-W",
+      "label": "West exterior door",
+      "x": 6,
+      "y": 11,
+      "side": "v"
+    },
+    {
+      "id": "EX-CW",
+      "label": "Corridor west exit",
+      "x": 6,
+      "y": 17.5,
+      "side": "v"
+    },
+    {
+      "id": "EX-CE",
+      "label": "Corridor east exit",
+      "x": 50,
+      "y": 17.5,
+      "side": "v"
+    },
+    {
+      "id": "EX-OFF",
+      "label": "Office main entrance",
+      "x": 13,
+      "y": 28,
+      "side": "h"
+    }
+  ],
+  "hall_checkpoint_exits": {
+    "CP-WE": "EX-HW",
+    "CP-EE": "EX-HE"
+  },
+  "firefighter_access": [
+    {
+      "id": "FA-1",
+      "label": "Fire brigade gate, loading yard (east)",
+      "x": 53.5,
+      "y": 10,
+      "note": "Appliance access from the service road; yard reaches Hall A east loading door."
+    },
+    {
+      "id": "FA-2",
+      "label": "West access (exterior door)",
+      "x": 3.5,
+      "y": 11,
+      "note": "Pedestrian access to west passage, electrical room and Hall A west door."
+    },
+    {
+      "id": "FA-3",
+      "label": "South entrance (offices)",
+      "x": 13,
+      "y": 31,
+      "note": "Main entrance; corridor connects to Hall A south door."
+    }
+  ],
+  "power_isolation": [
+    {
+      "id": "PS-1",
+      "label": "Site main power isolation (main LV switchboard)",
+      "x": 7.1,
+      "y": 9.2,
+      "room": "ELEC"
+    },
+    {
+      "id": "PS-2",
+      "label": "Hall A distribution isolator (west wall)",
+      "x": 15.2,
+      "y": 8.6,
+      "room": "HALL-A"
+    },
+    {
+      "id": "PS-3",
+      "label": "Compressor emergency stop",
+      "x": 7.1,
+      "y": 15.2,
+      "room": "COMP"
+    }
+  ],
+  "extinguishers": [
+    {
+      "id": "FX-1",
+      "label": "CO2 extinguisher",
+      "x": 13.3,
+      "y": 9.2
+    },
+    {
+      "id": "FX-2",
+      "label": "CO2 extinguisher",
+      "x": 15.0,
+      "y": 12.6
+    },
+    {
+      "id": "FX-3",
+      "label": "Powder extinguisher",
+      "x": 35.2,
+      "y": 8.2
+    },
+    {
+      "id": "FX-4",
+      "label": "Foam extinguisher",
+      "x": 31.5,
+      "y": 15.2
+    },
+    {
+      "id": "FX-5",
+      "label": "Foam extinguisher",
+      "x": 37.0,
+      "y": 19.8
+    },
+    {
+      "id": "FX-6",
+      "label": "Powder extinguisher",
+      "x": 21.0,
+      "y": 17.5
+    }
+  ],
+  "hydrants": [
+    {
+      "id": "HY-1",
+      "label": "Hydrant, service road east",
+      "x": 54.5,
+      "y": 5
+    },
+    {
+      "id": "HY-2",
+      "label": "Hydrant, west road",
+      "x": 2,
+      "y": 21
+    },
+    {
+      "id": "HY-3",
+      "label": "Hydrant, south car park",
+      "x": 30,
+      "y": 32.5
+    }
+  ],
+  "hazards": [
+    {
+      "id": "HZ-ELEC",
+      "label": "Electrical room",
+      "x": 13.0,
+      "y": 6.9,
+      "kind": "electrical",
+      "detail": "400 A low-voltage switchboard. Live conductors until isolated at PS-1."
+    },
+    {
+      "id": "HZ-GAS",
+      "label": "Welding gas cylinder cage",
+      "x": 39,
+      "y": 5.5,
+      "w": 4,
+      "h": 3,
+      "kind": "gas",
+      "detail": "Oxygen and acetylene cylinders (demo: 6 + 4). Heated cylinders can rupture."
+    },
+    {
+      "id": "HZ-PAINT",
+      "label": "Paint & solvent store",
+      "x": 42.6,
+      "y": 20.4,
+      "kind": "flammable",
+      "detail": "Flammable liquids (demo: about 800 L in metal cabinets)."
+    },
+    {
+      "id": "HZ-COMP",
+      "label": "Compressor room",
+      "x": 13.0,
+      "y": 12.9,
+      "kind": "pressure",
+      "detail": "Compressed-air receivers at 10 bar."
+    },
+    {
+      "id": "HZ-WELD",
+      "label": "Welding bay",
+      "x": 34.0,
+      "y": 11.0,
+      "kind": "hot_work",
+      "detail": "Hot work area; combustible offcuts possible."
+    },
+    {
+      "id": "HZ-WH",
+      "label": "Warehouse",
+      "x": 34.4,
+      "y": 20.4,
+      "kind": "fire_load",
+      "detail": "Cardboard and plastic packaging, high fire load."
+    }
+  ],
+  "assembly_points": [
+    {
+      "id": "AP-1",
+      "label": "Assembly point A, north-west car park",
+      "x": 8,
+      "y": 2.5
+    },
+    {
+      "id": "AP-2",
+      "label": "Assembly point B, south lawn",
+      "x": 42,
+      "y": 32
+    }
+  ],
+  "blocked_passages": [],
+  "safety_notes": [
+    "ARGOS does not recommend an entry route. Route suitability and building entry are decided by the authorized incident commander.",
+    "Isolate electrical supply before using water near the electrical cabinets or cable tray (demo data: PS-2 for Hall A, PS-1 for the whole site).",
+    "Gas cylinders are stored outdoors next to the east loading door (demo data). Consider them if the fire is near the east side of Hall A.",
+    "People on site: ARGOS has no headcount. Confirm with the site manager at the assembly points."
+  ]
+}

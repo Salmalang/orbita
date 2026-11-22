@@ -202,3 +202,13 @@ details > summary { cursor: pointer; color: var(--brown); font-weight: 600; marg
   .side, .top, .noprint, .guide { display: none !important; }
   .shell { display: block; } body { background: #fff; } .card { box-shadow: none; }
 }
+
+/* firefighter emergency pack */
+.packcard { border: 2px solid var(--crit); background: linear-gradient(180deg, #FFFBFA, var(--panel) 60%); }
+.packhead { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 12px; }
+.packtitle { font-size: 19px; font-weight: 700; color: var(--crit); }
+.packbody { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.qrbox { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 8px; flex: none; }
+.qrbox img { display: block; width: 200px; height: 200px; image-rendering: pixelated; }
+.qrnone { width: 200px; height: 200px; display: grid; place-items: center; color: var(--muted); background: var(--soft); border-radius: 8px; }
+.btn.disabled { pointer-events: none; opacity: .45; }

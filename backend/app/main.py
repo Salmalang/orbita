@@ -7,16 +7,19 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import threading
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from ai import registry
+from backend.app import emergency
 from backend.app.cases import CaseManager, WorkflowError
+from backend.app.emergency import PackError, PackService
 from backend.app.replay import SPEEDS, HallData, ReplayEngine
 from backend.app.store import DEFAULT_DB, Store
 from drone.missions import FINDING_TYPES, SEVERITIES, MissionError, MissionManager
@@ -42,6 +45,7 @@ class Runtime:
         self.drone = MissionManager(self.store, FACILITY, autostart=simulate_drone)
         self.anchors = AnchorService(self.store)
         self.learning = LearningPipeline(self.store, self.anchors)
+        self.packs = PackService(self.store)
         self.data = HallData()
         self.engine = ReplayEngine(self.data, on_tick=self.on_tick)
         self._last_level = "NORMAL"
@@ -76,6 +80,7 @@ class Runtime:
                 m = self.drone.create_mission("TARGETED", origin="ALERT", checkpoints=cps, case_id=case["id"],
                                               reason=f"Sensor alert: {decision.reasons[0]}")
                 self.cases.attach_mission(case["id"], m["id"])
+                self.packs.ensure(self.store.get_case(case["id"]))     # firefighter pack, issued automatically
                 if self.auto_pause:
                     engine.pause()   # the operator stops the replay to respond, as in a real control room
                     self.store.append("replay_auto_paused", "system", {"reason": f"Safety Case {case['id']} opened"},
@@ -83,6 +88,7 @@ class Runtime:
             elif open_[0]["status"] != "OPEN":
                 # fire signature back after the corrective action: that is a real escalation
                 self.cases.escalate(open_[0]["id"], rec["t"], decision.__dict__)
+                self.packs.ensure(self.store.get_case(open_[0]["id"]))
 
     def cursor(self) -> str | None:
         return self.engine.snapshot()["cursor"]
@@ -570,6 +576,161 @@ def reference_image():
     if not files:
         raise HTTPException(404, "reference images not downloaded (python -m ingest download motor_thermal)")
     return FileResponse(files[len(files) // 2], media_type="image/bmp")
+
+
+# ------------------------------------------------------------------------------ firefighter emergency pack
+def _lan_ip() -> str:
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("10.255.255.255", 1))            # no packet is sent; this only selects the outgoing interface
+        return s.getsockname()[0]
+    except OSError:
+        return "127.0.0.1"
+    finally:
+        s.close()
+
+
+def _bases(request: Request) -> dict:
+    """URL a phone can reach (QR) and URL for this browser. ARGOS_PUBLIC_URL overrides (e.g. an HTTPS host)."""
+    local = str(request.base_url).rstrip("/")
+    env = os.environ.get("ARGOS_PUBLIC_URL", "").rstrip("/")
+    if env:
+        return {"qr": env, "local": local, "lan": False}
+    host, port = request.url.hostname, request.url.port
+    if host in ("localhost", "127.0.0.1", "::1"):
+        return {"qr": f"http://{_lan_ip()}{':' + str(port) if port else ''}", "local": local, "lan": True}
+    return {"qr": local, "local": local, "lan": False}
+
+
+def _case_or_404(case_id: str) -> dict:
+    c = rt().store.get_case(case_id)
+    if not c:
+        raise HTTPException(404, f"case {case_id} not found")
+    return c
+
+
+def _pack_view(c: dict, request: Request) -> dict:
+    r = rt()
+    ok, why = PackService.eligible(c)
+    rec = r.packs.get(c["id"])
+    state = r.packs.state(rec)
+    b = _bases(request)
+    path = f"/pack/{c['id']}?t={rec['token']}" if rec and state == "ACTIVE" else None
+    return {"case_id": c["id"], "eligible": ok, "reason": why, "state": state, "demo_access": True,
+            "issued_at": (rec or {}).get("issued_at"), "expires_at": (rec or {}).get("expires_at"),
+            "generation": (rec or {}).get("generation"), "opened": (rec or {}).get("opened"), "auto": (rec or {}).get("auto"),
+            "qr_url": b["qr"] + path if path else None, "local_url": b["local"] + path if path else None,
+            "lan": b["lan"], "network_note": emergency.NETWORK_NOTE,
+            "lan_hint": ("The QR code uses this computer's network address. A phone on the same network can open it only if "
+                         "the server listens on all interfaces (--host 0.0.0.0) and the firewall allows the port.") if b["lan"] else None}
+
+
+def _briefing(c: dict) -> dict:
+    r = rt()
+    snap = r.engine.snapshot()
+    same = bool(snap["event_id"]) and snap["event_id"] == c.get("replay_event") and c.get("replay_run") == r.replay_run
+    mids = set(c.get("missions") or [])
+    cases = {x["id"]: x for x in r.store.cases()}
+    findings = []
+    for f in r.drone.findings():
+        linked = cases.get(f.get("case_id"))
+        closed = bool(linked and linked["status"] == "CLOSED")
+        if f["mission_id"] in mids or not closed:
+            findings.append({**f, "resolved": closed})
+    cards = {f"{x['name']}/{x['version']}": x for x in registry.cards()}
+    return emergency.build_briefing(
+        c, facility=FACILITY, events=r.store.events(case_id=c["id"], limit=2000), live=snap["latest"] if same else None,
+        recent_ticks=r.engine.recent_ticks(300) if same else None,
+        missions=[m for m in r.drone.missions() if m["id"] in mids], findings=findings,
+        chain=r.store.verify_chain(), hedera=r.anchors.status(),
+        model_metrics=cards.get("zone_fire/1.0.0", {}).get("metrics"), contacts=FACILITY.get("emergency_contacts"))
+
+
+def _pdf_response(c: dict, url: str | None, expires: str | None) -> Response:
+    pdf = emergency.render_pdf(_briefing(c), url, expires)
+    name = f"ARGOS_firefighter_briefing_{c['id']}.pdf"
+    out = Path(os.environ.get("ARGOS_PACK_DIR", ROOT / "data" / "emergency_packs"))
+    out.mkdir(parents=True, exist_ok=True)
+    (out / name).write_bytes(pdf)                       # local offline copy (data/ is git-ignored)
+    return Response(pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"})
+
+
+@app.get("/api/cases/{case_id}/pack")
+def case_pack(case_id: str, request: Request):
+    c = _case_or_404(case_id)
+    rt().packs.ensure(c)
+    return _pack_view(c, request)
+
+
+@app.post("/api/cases/{case_id}/pack/issue")
+def case_pack_issue(case_id: str, request: Request):
+    c = _case_or_404(case_id)
+    try:
+        rt().packs.issue(c, actor="operator")
+    except PackError as e:
+        _err(e, e.code)
+    return _pack_view(c, request)
+
+
+@app.post("/api/cases/{case_id}/pack/revoke")
+def case_pack_revoke(case_id: str, request: Request):
+    c = _case_or_404(case_id)
+    try:
+        rt().packs.revoke(case_id, actor="operator")
+    except PackError as e:
+        _err(e, e.code)
+    return _pack_view(c, request)
+
+
+@app.get("/api/cases/{case_id}/pack/qr.png")
+def case_pack_qr(case_id: str, request: Request):
+    v = _pack_view(_case_or_404(case_id), request)
+    if not v["qr_url"]:
+        raise HTTPException(409, "no active firefighter pack link for this incident")
+    return Response(emergency.qr_png(v["qr_url"]), media_type="image/png",
+                    headers={"Content-Disposition": f'inline; filename="ARGOS_QR_{case_id}.png"', "Cache-Control": "no-store"})
+
+
+@app.get("/api/cases/{case_id}/pack/briefing.pdf")
+def case_pack_pdf(case_id: str, request: Request):
+    c = _case_or_404(case_id)
+    ok, why = PackService.eligible(c)
+    if not ok:
+        raise HTTPException(409, why)
+    v = _pack_view(c, request)
+    return _pdf_response(c, v["qr_url"], v["expires_at"])
+
+
+def _responder(case_id: str, t: str | None) -> dict:
+    c = rt().store.get_case(case_id)
+    if not c:
+        raise HTTPException(401, "Invalid access link.")          # do not reveal which incident ids exist
+    try:
+        rt().packs.validate(case_id, t)
+    except PackError as e:
+        raise HTTPException(e.code, str(e))
+    return c
+
+
+@app.get("/api/pack/{case_id}")
+def responder_briefing(case_id: str, t: str | None = None):
+    c = _responder(case_id, t)
+    return JSONResponse({**_briefing(c), "link_expires_at": rt().packs.get(case_id)["expires_at"]},
+                        headers={"Cache-Control": "no-store"})
+
+
+@app.get("/api/pack/{case_id}/briefing.pdf")
+def responder_pdf(case_id: str, request: Request, t: str | None = None):
+    c = _responder(case_id, t)
+    rec = rt().packs.get(case_id)
+    return _pdf_response(c, f"{str(request.base_url).rstrip('/')}/pack/{case_id}?t={rec['token']}", rec["expires_at"])
+
+
+@app.get("/pack/{case_id}")
+def responder_page(case_id: str):
+    return FileResponse(ROOT / "dashboard" / "pack.html",
+                        headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex"})
 
 
 # ------------------------------------------------------------------------------ static
