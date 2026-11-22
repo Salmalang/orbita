@@ -22,6 +22,8 @@ a { color: var(--brown); }
 .sev .upd { display: flex; gap: 8px; align-items: center; font-size: 12.5px; margin-top: 6px; flex-wrap: wrap; }
 .dot { width: 9px; height: 9px; border-radius: 50%; background: #9BE3B4; display: inline-block; box-shadow: 0 0 0 3px rgba(255,255,255,.18); }
 .dot.off { background: #FFD27A; }
+.console { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--ivory); border-bottom: 1px solid var(--line); padding: 8px 16px; font-size: 13.5px; color: var(--muted); }
+.console a { font-weight: 700; text-decoration: none; background: var(--brown); color: #fff; padding: 7px 14px; border-radius: 99px; }
 .demo { background: var(--charcoal); color: #F4F1EC; font-size: 12.5px; padding: 7px 16px; text-align: center; letter-spacing: .3px; }
 .demo b { color: #FFD27A; }
 

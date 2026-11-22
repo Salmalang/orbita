@@ -359,6 +359,9 @@ function nowText(c, isFinding, missions) {
 
 
 // ------------------------------------------------------------------ firefighter emergency pack
+// the real signed briefing link, on this machine's address, marked as opened from the control room
+const firefighterView = (v) => (v?.local_url ? `${v.local_url}&src=console` : null);
+
 function PackCard({ c, toast }) {
   const [v, setV] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -372,11 +375,13 @@ function PackCard({ c, toast }) {
       <div class="muted">Issued ${v.auto ? "automatically" : "by the operator"} because this fire incident reached CRITICAL. Scan to open the responder briefing.</div></div>
       <span class="pill bad">DEMO ACCESS · fictional factory data</span></div>
     <div class="packbody">
-      <div class="qrbox">${active ? html`<img src=${`/api/cases/${c.id}/pack/qr.png?g=${v.generation}`} alt=${`QR code for the firefighter briefing of incident ${c.id}`} width="200" height="200"/>`
+      <div class="qrbox">${active ? html`<a class="qrlink" href=${firefighterView(v)} target="_blank" rel="noopener" title="Click to open the firefighter view (or scan with a phone)">
+          <img src=${`/api/cases/${c.id}/pack/qr.png?g=${v.generation}`} alt=${`QR code: click to open the firefighter briefing of incident ${c.id}`} width="200" height="200"/>
+          <span class="qrhint">Click or scan to open</span></a>`
         : html`<div class="qrnone">${v.state === "REVOKED" ? "Link revoked" : v.state === "EXPIRED" ? "Link expired" : "No link"}</div>`}</div>
       <div class="stack" style="flex:1;min-width:0">
         <div class="row">
-          <a class=${`btn primary ${active ? "" : "disabled"}`} href=${v.local_url || "#"} target="_blank" rel="noopener">🚒 Firefighter Emergency Pack</a>
+          <a class=${`btn primary big ${active ? "" : "disabled"}`} href=${firefighterView(v) || "#"} target="_blank" rel="noopener">🚒 Open Firefighter View</a>
           <a class=${`btn ${active ? "" : "disabled"}`} href=${`/api/cases/${c.id}/pack/qr.png?g=${v.generation}`} download=${`ARGOS_QR_${c.id}.png`}>⬇ QR code</a>
           <a class="btn" href=${`/api/cases/${c.id}/pack/briefing.pdf`} download=${`ARGOS_firefighter_briefing_${c.id}.pdf`}>⬇ Briefing PDF</a>
         </div>
@@ -899,11 +904,15 @@ const SCENARIOS = {
       { title: "Firefighter Emergency Pack", label: "Show the QR code",
         act: async (ctx, d) => { location.hash = `#/cases/${d.case}`; const v = await api(`/api/cases/${d.case}/pack`);
           setTimeout(() => document.getElementById("firepack")?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
-          return { packUrl: v.local_url, packState: v.state }; },
+          return { packUrl: firefighterView(v), packState: v.state }; },
         done: (ctx, d) => d.packState === "ACTIVE",
         text: "The incident is CRITICAL, so ARGOS issued a Firefighter Emergency Pack automatically. The QR code holds only a short-lived link for this incident, not the data. Demo access, fictional factory layout." },
-      { title: "What the firefighter sees", label: "Open the emergency briefing",
-        act: async (ctx, d) => { const a = document.createElement("a"); a.href = d.packUrl; a.target = "_blank"; a.rel = "noopener";
+      { title: "What the firefighter sees", label: "Open Firefighter View",
+        act: async (ctx, d) => {
+          // read the link currently shown on the incident card (stays correct after "Issue new link"), synchronously so no pop-up blocker fires
+          const href = document.querySelector("a.qrlink")?.href || d.packUrl;
+          if (!href) throw new Error("Open the incident page first, then try again.");
+          const a = document.createElement("a"); a.href = href.includes("src=console") ? href : `${href}&src=console`; a.target = "_blank"; a.rel = "noopener";
           document.body.appendChild(a); a.click(); a.remove(); return { packOpened: true }; },
         text: "Scanning the QR code opens this mobile page: severity, where, nearby hazards, the demonstration factory map, sensor and AI analysis, access points and the timeline. Facts, sensor observations, AI hypotheses and unknowns are kept apart." },
       { title: "Offline backup", label: "Download the briefing PDF",

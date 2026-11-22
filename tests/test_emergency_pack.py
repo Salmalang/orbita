@@ -215,3 +215,25 @@ def test_blocked_exit_from_simulated_finding_is_labelled():
 def test_pdf_offline_without_server_url():
     pdf = emergency.render_pdf(emergency.build_briefing(_case(), facility=_facility(), events=[]), None, None)
     assert pdf[:5] == b"%PDF-" and len(pdf) > 10_000
+
+
+def test_laptop_view_uses_localhost_and_keeps_token_checks(fire):
+    from fastapi.testclient import TestClient
+    from backend.app import main
+    c, case, rt = fire
+    with TestClient(main.app, base_url="http://localhost:8010") as local:
+        v = local.get(f"/api/cases/{case['id']}/pack").json()
+        assert v["local_url"].startswith(f"http://localhost:8010/pack/{case['id']}?t=")      # reachable on this machine
+        assert not v["qr_url"].startswith("http://localhost")                                # phones get a network address
+        tok = v["local_url"].split("t=")[1]
+        assert local.get(f"/api/pack/{case['id']}?t={tok}&src=console").status_code == 200  # same signed link
+        assert local.get(f"/api/pack/{case['id']}?src=console").status_code == 401         # src never replaces the token
+
+
+def test_ui_wires_clickable_qr_button_and_return_path():
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1] / "dashboard"
+    app_js, pack_js = (root / "app.js").read_text(encoding="utf-8"), (root / "pack.js").read_text(encoding="utf-8")
+    assert 'class="qrlink" href=${firefighterView(v)} target="_blank"' in app_js
+    assert "Open Firefighter View" in app_js and "packUrl: firefighterView(v)" in app_js
+    assert "Back to incident" in pack_js and 'qs.get("src") === "console"' in pack_js

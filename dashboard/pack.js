@@ -3,7 +3,9 @@
   "use strict";
   const root = document.getElementById("pack");
   const caseId = decodeURIComponent(location.pathname.split("/").filter(Boolean).pop() || "");
-  const token = new URLSearchParams(location.search).get("t") || "";
+  const qs = new URLSearchParams(location.search);
+  const token = qs.get("t") || "";
+  const fromConsole = qs.get("src") === "console";      // opened from the ARGOS control room on this machine
   const api = `/api/pack/${encodeURIComponent(caseId)}?t=${encodeURIComponent(token)}`;
   const pdf = `/api/pack/${encodeURIComponent(caseId)}/briefing.pdf?t=${encodeURIComponent(token)}`;
   let data = null, lastOk = null, offline = false, zoom = false;
@@ -91,6 +93,7 @@
       : `<span class="tag t-wait">${esc(hv.status.replaceAll("_", " ").toLowerCase())}</span>`;
 
     root.innerHTML = `
+    ${backBar()}
     <header class="sev ${esc(inc.severity)}" role="banner">
       <div class="l1"><span class="ic">⚠</span>${esc(inc.severity_text.toUpperCase())} · FIRE SIGNAL</div>
       <div class="l2">Incident <b>${esc(inc.id)}</b> · ${esc(inc.site_name)} · ${esc(inc.zone_name)}</div>
@@ -190,8 +193,14 @@
     if (z) z.onclick = () => { zoom = !zoom; render(); document.getElementById("map").scrollIntoView(); };
   }
 
+  function backBar() {
+    if (!fromConsole) return "";
+    return `<div class="console" role="navigation"><span>Control-room preview of the firefighter view</span>
+      <a href="/#/cases/${encodeURIComponent(caseId)}" id="back">← Back to incident ${esc(caseId)}</a></div>`;
+  }
+
   function fail(status, msg) {
-    root.innerHTML = `<div class="err" role="alert"><h1>${status === 410 ? "Link expired" : status === 401 || status === 403 ? "Access denied" : "Briefing unavailable"}</h1>
+    root.innerHTML = backBar() + `<div class="err" role="alert"><h1>${status === 410 ? "Link expired" : status === 401 || status === 403 ? "Access denied" : "Briefing unavailable"}</h1>
       <p>${esc(msg)}</p><p class="muted small">This briefing is only available through a valid, time-limited link from the ARGOS incident page. If the server is unreachable, use the printed PDF briefing.</p></div>`;
   }
 
